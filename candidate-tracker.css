@@ -232,6 +232,16 @@ body.candidate-tracker-page {
   background: var(--ct-hover);
 }
 
+.ct-table .ct-name-link {
+  color: var(--ct-accent);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.ct-table .ct-name-link:hover {
+  text-decoration: underline;
+}
+
 .ct-table tbody tr:last-child td {
   border-bottom: none;
 }

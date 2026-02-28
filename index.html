@@ -78,6 +78,8 @@
   var possibleStatus = ['status', 'application status', 'stage', 'state'];
   var possibleStatusDate = ['activity status due at', 'status date', 'status changed', 'interview date', 'next interview date', 'next interview', 'scheduled date', 'scheduled at', 'scheduled for', 'interview scheduled', 'scheduled', 'current interview date', 'upcoming interview', 'last updated', 'updated at', 'updated', 'stage change date', 'stage changed', 'last activity', 'date scheduled', 'date'];
   var possibleSource = ['source', 'credited to', 'referral', 'sourcing source'];
+  var possibleIds = ['ashby candidate id', 'candidate id', 'id', 'candidateId', 'candidate_id'];
+  var ASHBY_PEOPLE_BASE = 'https://app.ashbyhq.com/people/';
 
   function findColumnIndex(columnNames, possible, excludeIndices) {
     var exclude = excludeIndices || [];
@@ -88,6 +90,16 @@
         if (exclude.indexOf(j) !== -1) continue;
         if (lower[j].indexOf(p) !== -1 || p.indexOf(lower[j]) !== -1) return j;
       }
+    }
+    return -1;
+  }
+
+  function findAshbyCandidateIdColumn(columnNames, excludeIndices) {
+    var exclude = excludeIndices || [];
+    for (var j = 0; j < columnNames.length; j++) {
+      if (exclude.indexOf(j) !== -1) continue;
+      var lower = (columnNames[j] || '').toLowerCase().trim();
+      if (lower.indexOf('ashby') !== -1 && lower.indexOf('candidate') !== -1 && lower.indexOf('id') !== -1) return j;
     }
     return -1;
   }
@@ -156,6 +168,32 @@
     if (Array.isArray(row)) return row[colIndex];
     var key = columnNames[colIndex];
     return key != null ? row[key] : '';
+  }
+
+  function getCandidateId(row, columnNames, indices) {
+    if (indices.id >= 0) {
+      var val = String(cellValue(row, indices.id, columnNames) || '').trim();
+      if (val) return val;
+    }
+    if (row && typeof row === 'object' && !Array.isArray(row)) {
+      var target = 'ashby candidate id';
+      for (var k in row) {
+        if (Object.prototype.hasOwnProperty.call(row, k) && (k || '').toLowerCase().trim() === target) {
+          var v = row[k];
+          if (v != null && v !== '') return String(v).trim();
+        }
+      }
+      for (var k2 in row) {
+        if (Object.prototype.hasOwnProperty.call(row, k2)) {
+          var lower = (k2 || '').toLowerCase().trim();
+          if (lower.indexOf('ashby') !== -1 && lower.indexOf('candidate') !== -1 && lower.indexOf('id') !== -1) {
+            var v2 = row[k2];
+            if (v2 != null && v2 !== '') return String(v2).trim();
+          }
+        }
+      }
+    }
+    return '';
   }
 
   function hashToIndex(str) {
@@ -231,6 +269,8 @@
       i.statusDate = findColumnIndex(columnNames, possibleStatusDate, [i.name, i.job, i.stage, i.status]);
       if (i.statusDate < 0) i.statusDate = findFirstDateLikeColumn(columnNames, [i.name, i.job, i.stage, i.status]);
       i.source = findColumnIndex(columnNames, possibleSource, [i.name, i.job, i.stage, i.status, i.statusDate]);
+      i.id = findColumnIndex(columnNames, possibleIds, [i.name, i.job, i.stage, i.status, i.statusDate, i.source]);
+      if (i.id < 0) i.id = findAshbyCandidateIdColumn(columnNames, [i.name, i.job, i.stage, i.status, i.statusDate, i.source]);
       return i;
     })();
     var rows = data;
@@ -255,7 +295,19 @@
       var tr = document.createElement('tr');
 
       var tdName = document.createElement('td');
-      tdName.textContent = escapeText(nameVal) || '—';
+      var candidateId = getCandidateId(row, columnNames, indices);
+      var nameDisplay = escapeText(nameVal) || '—';
+      if (candidateId) {
+        var link = document.createElement('a');
+        link.href = ASHBY_PEOPLE_BASE + encodeURIComponent(candidateId);
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.textContent = nameDisplay;
+        link.className = 'ct-name-link';
+        tdName.appendChild(link);
+      } else {
+        tdName.textContent = nameDisplay;
+      }
       tr.appendChild(tdName);
 
       var tdJob = document.createElement('td');
@@ -513,6 +565,8 @@
           i.statusDate = findColumnIndex(columnNames, possibleStatusDate, [i.name, i.job, i.stage, i.status]);
           if (i.statusDate < 0) i.statusDate = findFirstDateLikeColumn(columnNames, [i.name, i.job, i.stage, i.status]);
           i.source = findColumnIndex(columnNames, possibleSource, [i.name, i.job, i.stage, i.status, i.statusDate]);
+          i.id = findColumnIndex(columnNames, possibleIds, [i.name, i.job, i.stage, i.status, i.statusDate, i.source]);
+          if (i.id < 0) i.id = findAshbyCandidateIdColumn(columnNames, [i.name, i.job, i.stage, i.status, i.statusDate, i.source]);
           return i;
         })();
         fullJobToIndex = {};
