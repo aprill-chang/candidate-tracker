@@ -55,8 +55,9 @@
                   <option value="range">Select date range</option>
                 </select>
                 <div id="ct-status-date-range-wrap" class="ct-status-date-range-wrap" aria-hidden="true">
-                  <label class="ct-date-range-label"><span>From</span> <input type="date" id="ct-status-date-from" class="ct-filter-input-date" aria-label="Status date from"></label>
-                  <label class="ct-date-range-label"><span>To</span> <input type="date" id="ct-status-date-to" class="ct-filter-input-date" aria-label="Status date to"></label>
+                  <input type="hidden" id="ct-status-date-from" aria-label="Status date from">
+                  <input type="hidden" id="ct-status-date-to" aria-label="Status date to">
+                  <div id="ct-date-range-calendar" class="ct-date-range-calendar"></div>
                 </div>
               </td>
               <td class="ct-filter-cell">
@@ -321,6 +322,134 @@
   var sortBy = '';
   var sortDir = 1;
 
+  function toYYYYMMDD(d) {
+    var y = d.getFullYear();
+    var m = d.getMonth() + 1;
+    var day = d.getDate();
+    return y + '-' + (m < 10 ? '0' : '') + m + '-' + (day < 10 ? '0' : '') + day;
+  }
+
+  function renderDateRangeCalendar(container, fromStr, toStr, onSelect) {
+    if (!container) return;
+    container.textContent = '';
+    var today = new Date();
+    today.setHours(0, 0, 0, 0);
+    var step = 0;
+    var fromDate = null;
+    var toDate = null;
+    var monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    var wrap = document.createElement('div');
+    wrap.className = 'ct-calendar-wrap';
+    var monthsContainer = document.createElement('div');
+    monthsContainer.className = 'ct-calendar-months';
+
+    function renderMonths() {
+      monthsContainer.textContent = '';
+      var m1 = new Date(monthStart.getFullYear(), monthStart.getMonth(), 1);
+      var m2 = new Date(m1.getFullYear(), m1.getMonth() + 1, 1);
+      [m1, m2].forEach(function (monthDate) {
+        var monthLabel = monthDate.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+        var table = document.createElement('table');
+        table.className = 'ct-calendar-month';
+        table.setAttribute('role', 'grid');
+        var thead = document.createElement('thead');
+        thead.innerHTML = '<tr><th colspan="7" class="ct-calendar-month-title">' + monthLabel + '</th></tr><tr><th scope="col" abbr="Sunday">Su</th><th scope="col" abbr="Monday">Mo</th><th scope="col" abbr="Tuesday">Tu</th><th scope="col" abbr="Wednesday">We</th><th scope="col" abbr="Thursday">Th</th><th scope="col" abbr="Friday">Fr</th><th scope="col" abbr="Saturday">Sa</th></tr>';
+        table.appendChild(thead);
+        var tbody = document.createElement('tbody');
+        var firstDay = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1).getDay();
+        var daysInMonth = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0).getDate();
+        var cells = [];
+        var i;
+        for (i = 0; i < firstDay; i++) cells.push(null);
+        for (i = 1; i <= daysInMonth; i++) cells.push(new Date(monthDate.getFullYear(), monthDate.getMonth(), i));
+        while (cells.length % 7 !== 0) cells.push(null);
+        for (var row = 0; row < cells.length / 7; row++) {
+          var tr = document.createElement('tr');
+          for (var col = 0; col < 7; col++) {
+            var td = document.createElement('td');
+            var cellDate = cells[row * 7 + col];
+            if (cellDate) {
+              var btn = document.createElement('button');
+              btn.type = 'button';
+              btn.className = 'ct-calendar-day';
+              btn.setAttribute('data-date', toYYYYMMDD(cellDate));
+              btn.textContent = cellDate.getDate();
+              var cellTime = cellDate.getTime();
+              if (fromDate && cellTime === fromDate.getTime()) btn.classList.add('ct-calendar-from');
+              if (toDate && cellTime === toDate.getTime()) btn.classList.add('ct-calendar-to');
+              if (fromDate && toDate && cellTime >= fromDate.getTime() && cellTime <= toDate.getTime()) btn.classList.add('ct-calendar-in-range');
+              if (cellTime === today.getTime()) btn.classList.add('ct-calendar-today');
+              btn.addEventListener('click', function () {
+                var d = new Date(this.getAttribute('data-date'));
+                if (step === 0) { fromDate = d; toDate = null; step = 1; }
+                else if (step === 1) {
+                  toDate = d;
+                  if (toDate.getTime() < fromDate.getTime()) { var t = fromDate; fromDate = toDate; toDate = t; }
+                  step = 2;
+                  if (onSelect) onSelect(toYYYYMMDD(fromDate), toYYYYMMDD(toDate));
+                } else { fromDate = d; toDate = null; step = 1; }
+                renderMonths();
+              });
+              td.appendChild(btn);
+            }
+            tr.appendChild(td);
+          }
+          tbody.appendChild(tr);
+        }
+        table.appendChild(tbody);
+        monthsContainer.appendChild(table);
+      });
+    }
+
+    if (fromStr) fromDate = new Date(fromStr);
+    if (toStr) toDate = new Date(toStr);
+    if (fromDate) fromDate.setHours(0, 0, 0, 0);
+    if (toDate) toDate.setHours(0, 0, 0, 0);
+    if (fromDate) step = toDate ? 2 : 1;
+
+    renderMonths();
+
+    var nav = document.createElement('div');
+    nav.className = 'ct-calendar-nav';
+    var prevBtn = document.createElement('button');
+    prevBtn.type = 'button';
+    prevBtn.className = 'ct-calendar-nav-btn';
+    prevBtn.textContent = '←';
+    prevBtn.setAttribute('aria-label', 'Previous months');
+    prevBtn.addEventListener('click', function () {
+      monthStart = new Date(monthStart.getFullYear(), monthStart.getMonth() - 1, 1);
+      renderMonths();
+    });
+    var nextBtn = document.createElement('button');
+    nextBtn.type = 'button';
+    nextBtn.className = 'ct-calendar-nav-btn';
+    nextBtn.textContent = '→';
+    nextBtn.setAttribute('aria-label', 'Next months');
+    nextBtn.addEventListener('click', function () {
+      monthStart = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 1);
+      renderMonths();
+    });
+    nav.appendChild(prevBtn);
+    nav.appendChild(nextBtn);
+    wrap.appendChild(monthsContainer);
+    wrap.appendChild(nav);
+
+    var clearBtn = document.createElement('button');
+    clearBtn.type = 'button';
+    clearBtn.className = 'ct-calendar-clear';
+    clearBtn.textContent = 'Clear range';
+    clearBtn.addEventListener('click', function () {
+      fromDate = null;
+      toDate = null;
+      step = 0;
+      if (onSelect) onSelect('', '');
+      renderMonths();
+    });
+    wrap.appendChild(clearBtn);
+
+    container.appendChild(wrap);
+  }
+
   function renderTableBody(tbody, columnNames, rows, indices, jobToIndex) {
     tbody.textContent = '';
     for (var r = 0; r < rows.length; r++) {
@@ -580,7 +709,8 @@
       var nextWeekStart = weekStart + 7 * oneDay;
       return rowDateMs >= nextWeekStart && rowDateMs < nextWeekStart + 7 * oneDay;
     }
-    if (filterValue === 'range' && fromStr && toStr) {
+    if (filterValue === 'range') {
+      if (!fromStr || !toStr) return true;
       var fromMs = new Date(fromStr).setHours(0, 0, 0, 0);
       var toMs = new Date(toStr).setHours(23, 59, 59, 999);
       return rowDateMs >= fromMs && rowDateMs <= toMs;
@@ -808,10 +938,20 @@
         var statusDateSel = document.getElementById('ct-filter-status-date');
         var rangeWrap = document.getElementById('ct-status-date-range-wrap');
         if (statusDateSel && rangeWrap) {
+          var calendarEl = document.getElementById('ct-date-range-calendar');
+          var fromInput = document.getElementById('ct-status-date-from');
+          var toInput = document.getElementById('ct-status-date-to');
           function syncDateRangeVisible() {
             var show = statusDateSel.value === 'range';
             rangeWrap.classList.toggle('ct-status-date-range-visible', show);
             rangeWrap.setAttribute('aria-hidden', show ? 'false' : 'true');
+            if (show && calendarEl && fromInput && toInput) {
+              renderDateRangeCalendar(calendarEl, fromInput.value, toInput.value, function (fromStr, toStr) {
+                fromInput.value = fromStr;
+                toInput.value = toStr;
+                applyFilterAndSort(raw);
+              });
+            }
           }
           syncDateRangeVisible();
           statusDateSel.onchange = function () {
@@ -819,10 +959,6 @@
             applyFilterAndSort(raw);
           };
         }
-        var dateFrom = document.getElementById('ct-status-date-from');
-        var dateTo = document.getElementById('ct-status-date-to');
-        if (dateFrom) dateFrom.onchange = function () { applyFilterAndSort(raw); };
-        if (dateTo) dateTo.onchange = function () { applyFilterAndSort(raw); };
         document.querySelectorAll('.ct-sortable').forEach(function (th) {
           th.addEventListener('click', function () {
             var key = th.getAttribute('data-sort');
