@@ -23,7 +23,6 @@
             <th scope="col">Candidate name</th>
             <th scope="col">Candidate job</th>
             <th scope="col">Current interview stage</th>
-            <th scope="col">Current interview date</th>
             <th scope="col">Status</th>
             <th scope="col">Status date</th>
             <th scope="col">Source</th>
@@ -44,9 +43,8 @@
   var possibleNames = ['candidate', 'name', 'full name', 'candidate name'];
   var possibleJobs = ['job', 'opening', 'position', 'role', 'title', 'job title'];
   var possibleStages = ['stage', 'interview stage', 'current stage', 'current interview stage', 'furthest stage group reached'];
-  var possibleDates = ['interview date', 'next interview', 'date', 'scheduled', 'current interview date', 'next interview date', 'interview scheduled', 'scheduled date', 'next interview date', 'upcoming interview'];
   var possibleStatus = ['status', 'application status', 'stage', 'state'];
-  var possibleStatusDate = ['status date', 'status changed', 'date', 'last updated', 'updated at'];
+  var possibleStatusDate = ['status date', 'status changed', 'interview date', 'next interview', 'next interview date', 'scheduled', 'interview scheduled', 'scheduled date', 'current interview date', 'upcoming interview', 'last updated', 'updated at', 'date'];
   var possibleSource = ['source', 'credited to', 'referral', 'sourcing source'];
 
   function findColumnIndex(columnNames, possible, excludeIndices) {
@@ -124,7 +122,7 @@
       wrap.hidden = false;
       var emptyRow = document.createElement('tr');
       var emptyCell = document.createElement('td');
-      emptyCell.colSpan = 8;
+      emptyCell.colSpan = 7;
       emptyCell.className = 'ct-empty-message';
       var msg = 'No candidate rows in the report. Check that your Ashby report has data and that filters are saved.';
       var status = response && response._status;
@@ -144,10 +142,9 @@
     indices.name = findColumnIndex(columnNames, possibleNames);
     indices.job = findColumnIndex(columnNames, possibleJobs, [indices.name]);
     indices.stage = findColumnIndex(columnNames, possibleStages, [indices.name, indices.job]);
-    indices.date = findColumnIndex(columnNames, possibleDates, [indices.name, indices.job, indices.stage]);
-    indices.status = findColumnIndex(columnNames, possibleStatus, [indices.name, indices.job, indices.stage, indices.date]);
-    indices.statusDate = findColumnIndex(columnNames, possibleStatusDate, [indices.name, indices.job, indices.stage, indices.date, indices.status]);
-    indices.source = findColumnIndex(columnNames, possibleSource, [indices.name, indices.job, indices.stage, indices.date, indices.status, indices.statusDate]);
+    indices.status = findColumnIndex(columnNames, possibleStatus, [indices.name, indices.job, indices.stage]);
+    indices.statusDate = findColumnIndex(columnNames, possibleStatusDate, [indices.name, indices.job, indices.stage, indices.status]);
+    indices.source = findColumnIndex(columnNames, possibleSource, [indices.name, indices.job, indices.stage, indices.status, indices.statusDate]);
 
     var firstRow = data[0];
     var isFirstRowHeader = firstRow && columnNames.length === firstRow.length &&
@@ -160,8 +157,6 @@
       var nameVal = cellValue(row, indices.name, columnNames);
       var jobVal = cellValue(row, indices.job, columnNames);
       var stageVal = cellValue(row, indices.stage, columnNames);
-      var dateVal = cellValue(row, indices.date, columnNames);
-      var isScheduling = !formatDate(dateVal);
       var noteVal = getStoredNote(rowId);
 
       var tr = document.createElement('tr');
@@ -177,15 +172,6 @@
       var tdStage = document.createElement('td');
       tdStage.textContent = escapeText(stageVal) || '—';
       tr.appendChild(tdStage);
-
-      var tdDate = document.createElement('td');
-      if (isScheduling) {
-        tdDate.classList.add('ct-date-scheduling');
-        tdDate.textContent = 'Scheduling';
-      } else {
-        tdDate.textContent = displayDate(dateVal);
-      }
-      tr.appendChild(tdDate);
 
       var statusVal = cellValue(row, indices.status, columnNames);
       var statusDateVal = cellValue(row, indices.statusDate, columnNames);
