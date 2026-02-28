@@ -1,0 +1,64 @@
+/**
+ * Vercel serverless function: fetch Ashby report data.
+ * Keeps ASHBY_API_KEY server-side. Requires Reports – Read permission.
+ */
+const REPORT_ID = 'c3ad3c95-3463-4710-a7f0-351d9a2004c2';
+
+module.exports = async function handler(req, res) {
+  if (req.method !== 'GET') {
+    res.setHeader('Allow', 'GET');
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  const apiKey = process.env.ASHBY_API_KEY;
+  if (!apiKey) {
+    return res.status(500).json({
+      error: 'Ashby API key not configured',
+      hint: 'Set ASHBY_API_KEY in Vercel Environment Variables or in .env locally.',
+    });
+  }
+
+  const authHeader =
+    'Basic ' + Buffer.from(apiKey + ':', 'utf8').toString('base64');
+
+  try {
+    const response = await fetch('https://api.ashbyhq.com/report.synchronous', {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json; version=1',
+        'Content-Type': 'application/json',
+        Authorization: authHeader,
+      },
+      body: JSON.stringify({
+        reportId: REPORT_ID,
+        includeHeadersInData: true,
+      }),
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      const status = response.status;
+      if (status === 429) {
+        return res.status(429).json({
+          error: 'Ashby rate limit exceeded',
+          details: data,
+        });
+      }
+      return res.status(status).json({
+        error: 'Ashby API error',
+        status,
+        details: data,
+      });
+    }
+
+    res.setHeader('Cache-Control', 'private, max-age=0');
+    return res.status(200).json(data);
+  } catch (err) {
+    console.error('Ashby report fetch error:', err.message);
+    return res.status(500).json({
+      error: 'Failed to fetch report',
+      message: err.message,
+    });
+  }
+};

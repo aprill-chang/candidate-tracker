@@ -1,0 +1,170 @@
+/* Candidate tracker – clean HR/analytics dashboard feel */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
+:root {
+  --ct-bg: #fafbfc;
+  --ct-surface: #ffffff;
+  --ct-text: #1f2937;
+  --ct-text-muted: #6b7280;
+  --ct-border: #e5e7eb;
+  --ct-header-bg: #f9fafb;
+  --ct-accent: #2563eb;
+  --ct-hover: #f3f4f6;
+  --ct-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body.candidate-tracker-page {
+  margin: 0;
+  padding: 0;
+  font-family: var(--ct-font);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--ct-text);
+  background-color: var(--ct-bg);
+}
+
+.ct-wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.ct-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.ct-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--ct-text);
+}
+
+.ct-meta {
+  font-size: 0.8125rem;
+  color: var(--ct-text-muted);
+}
+
+.ct-refresh {
+  padding: 0.5rem 0.75rem;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--ct-accent);
+  background: transparent;
+  border: 1px solid var(--ct-border);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.ct-refresh:hover {
+  background: var(--ct-hover);
+}
+
+.ct-loading,
+.ct-error {
+  padding: 2rem;
+  text-align: center;
+  color: var(--ct-text-muted);
+}
+
+.ct-error {
+  color: #b91c1c;
+}
+
+.ct-table-wrap {
+  overflow-x: auto;
+  background: var(--ct-surface);
+  border-radius: 8px;
+  border: 1px solid var(--ct-border);
+}
+
+.ct-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.ct-table th,
+.ct-table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--ct-border);
+}
+
+.ct-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  color: var(--ct-text);
+  background: var(--ct-header-bg);
+  white-space: nowrap;
+}
+
+.ct-table tbody tr:hover {
+  background: var(--ct-hover);
+}
+
+.ct-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.ct-table .ct-note-cell {
+  min-width: 180px;
+  padding: 0.5rem;
+}
+
+.ct-table .ct-note-input {
+  width: 100%;
+  min-height: 2.25rem;
+  padding: 0.5rem 0.5rem;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  color: var(--ct-text);
+  background: var(--ct-surface);
+  border: 1px solid var(--ct-border);
+  border-radius: 4px;
+  resize: vertical;
+}
+
+.ct-table .ct-note-input:focus {
+  outline: none;
+  border-color: var(--ct-accent);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+.ct-table .ct-date-scheduling {
+  color: var(--ct-text-muted);
+  font-style: italic;
+}
+
+@media (max-width: 640px) {
+  .ct-wrap {
+    padding: 1rem;
+  }
+
+  .ct-table th,
+  .ct-table td {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8125rem;
+  }
+
+  .ct-table .ct-note-cell {
+    min-width: 140px;
+  }
+}
