@@ -17,16 +17,30 @@
     <div id="ct-loading" class="ct-loading" hidden>Loading report…</div>
     <div id="ct-error" class="ct-error" hidden></div>
     <p id="ct-column-hint" class="ct-column-hint" hidden aria-live="polite"></p>
+    <div id="ct-filters" class="ct-filters" hidden>
+      <label class="ct-filter-label"><span>Job</span>
+        <select id="ct-filter-job" class="ct-filter-select" aria-label="Filter by job"></select>
+      </label>
+      <label class="ct-filter-label"><span>Stage</span>
+        <select id="ct-filter-stage" class="ct-filter-select" aria-label="Filter by interview stage"></select>
+      </label>
+      <label class="ct-filter-label"><span>Status</span>
+        <select id="ct-filter-status" class="ct-filter-select" aria-label="Filter by status"></select>
+      </label>
+      <label class="ct-filter-label"><span>Source</span>
+        <select id="ct-filter-source" class="ct-filter-select" aria-label="Filter by source"></select>
+      </label>
+    </div>
     <div class="ct-table-wrap" id="ct-table-wrap" hidden>
       <table class="ct-table" id="ct-table" role="grid">
         <thead>
           <tr>
-            <th scope="col">Candidate name</th>
-            <th scope="col">Candidate job</th>
-            <th scope="col">Current interview stage</th>
-            <th scope="col">Status</th>
-            <th scope="col">Status date</th>
-            <th scope="col">Source</th>
+            <th scope="col" class="ct-sortable" data-sort="name" id="ct-th-name">Candidate name <span class="ct-sort-icon" aria-hidden="true"></span></th>
+            <th scope="col" class="ct-sortable" data-sort="job" id="ct-th-job">Candidate job <span class="ct-sort-icon" aria-hidden="true"></span></th>
+            <th scope="col" class="ct-sortable" data-sort="stage" id="ct-th-stage">Current interview stage <span class="ct-sort-icon" aria-hidden="true"></span></th>
+            <th scope="col" class="ct-sortable" data-sort="status" id="ct-th-status">Status <span class="ct-sort-icon" aria-hidden="true"></span></th>
+            <th scope="col" class="ct-sortable" data-sort="statusDate" id="ct-th-statusDate">Status date <span class="ct-sort-icon" aria-hidden="true"></span></th>
+            <th scope="col" class="ct-sortable" data-sort="source" id="ct-th-source">Source <span class="ct-sort-icon" aria-hidden="true"></span></th>
             <th scope="col">Note</th>
           </tr>
         </thead>
@@ -159,7 +173,18 @@
     return '•';
   }
 
-  function renderTable(columnNames, data, debug, response) {
+  var fullColumnNames = [];
+  var fullData = [];
+  var fullIndices = null;
+  var fullJobToIndex = {};
+  var uniqueJobs = [];
+  var uniqueStages = [];
+  var uniqueStatuses = [];
+  var uniqueSources = [];
+  var sortBy = '';
+  var sortDir = 1;
+
+  function renderTable(columnNames, data, debug, response, jobToIndexOverride) {
     var tbody = document.getElementById('ct-tbody');
     var wrap = document.getElementById('ct-table-wrap');
     tbody.textContent = '';
@@ -170,7 +195,7 @@
       var emptyCell = document.createElement('td');
       emptyCell.colSpan = 7;
       emptyCell.className = 'ct-empty-message';
-      var msg = 'No candidate rows in the report. Check that your Ashby report has data and that filters are saved.';
+      var msg = fullData.length > 0 ? 'No candidates match the current filters.' : 'No candidate rows in the report. Check that your Ashby report has data and that filters are saved.';
       var status = response && response._status;
       var reason = response && response._failureReason;
       if (status) msg += ' (Status: ' + status + ')';
@@ -184,29 +209,27 @@
       return;
     }
 
-    var indices = {};
-    indices.name = findColumnIndex(columnNames, possibleNames);
-    indices.job = findColumnIndex(columnNames, possibleJobs, [indices.name]);
-    indices.stage = findColumnIndex(columnNames, possibleStages, [indices.name, indices.job]);
-    indices.status = findColumnIndex(columnNames, possibleStatus, [indices.name, indices.job, indices.stage]);
-    indices.statusDate = findColumnIndex(columnNames, possibleStatusDate, [indices.name, indices.job, indices.stage, indices.status]);
-    if (indices.statusDate < 0) {
-      indices.statusDate = findFirstDateLikeColumn(columnNames, [indices.name, indices.job, indices.stage, indices.status]);
-    }
-    indices.source = findColumnIndex(columnNames, possibleSource, [indices.name, indices.job, indices.stage, indices.status, indices.statusDate]);
-
-    var firstRow = data[0];
-    var isFirstRowHeader = firstRow && columnNames.length === firstRow.length &&
-      columnNames.every(function (h, i) { return String((Array.isArray(firstRow) ? firstRow[i] : firstRow[h]) || '').trim() === String(h || '').trim(); });
-    var rows = isFirstRowHeader ? data.slice(1) : data;
-
-    var jobToIndex = {};
-    var jobIdx = 0;
-    for (var r = 0; r < rows.length; r++) {
-      var row = rows[r];
-      var j = escapeText(cellValue(row, indices.job, columnNames)) || '—';
-      if (jobToIndex[j] === undefined) jobToIndex[j] = jobIdx++;
-    }
+    var indices = fullIndices || (function () {
+      var i = {};
+      i.name = findColumnIndex(columnNames, possibleNames);
+      i.job = findColumnIndex(columnNames, possibleJobs, [i.name]);
+      i.stage = findColumnIndex(columnNames, possibleStages, [i.name, i.job]);
+      i.status = findColumnIndex(columnNames, possibleStatus, [i.name, i.job, i.stage]);
+      i.statusDate = findColumnIndex(columnNames, possibleStatusDate, [i.name, i.job, i.stage, i.status]);
+      if (i.statusDate < 0) i.statusDate = findFirstDateLikeColumn(columnNames, [i.name, i.job, i.stage, i.status]);
+      i.source = findColumnIndex(columnNames, possibleSource, [i.name, i.job, i.stage, i.status, i.statusDate]);
+      return i;
+    })();
+    var rows = data;
+    var jobToIndex = jobToIndexOverride || (function () {
+      var map = {};
+      var idx = 0;
+      for (var r = 0; r < rows.length; r++) {
+        var j = escapeText(cellValue(rows[r], indices.job, columnNames)) || '—';
+        if (map[j] === undefined) map[j] = idx++;
+      }
+      return map;
+    })();
 
     for (var r = 0; r < rows.length; r++) {
       var row = rows[r];
@@ -274,6 +297,92 @@
     if (el) el.textContent = text;
   }
 
+  function getVal(row, key, columnNames, indices) {
+    var col = indices[key];
+    return col >= 0 ? cellValue(row, col, columnNames) : '';
+  }
+
+  function getDisplayVal(row, key, columnNames, indices) {
+    return escapeText(getVal(row, key, columnNames, indices)) || '—';
+  }
+
+  function populateFilterOptions() {
+    function fillSelect(id, options) {
+      var sel = document.getElementById(id);
+      if (!sel) return;
+      sel.textContent = '';
+      var all = document.createElement('option');
+      all.value = '';
+      all.textContent = 'All';
+      sel.appendChild(all);
+      options.forEach(function (opt) {
+        var o = document.createElement('option');
+        o.value = opt;
+        o.textContent = opt;
+        sel.appendChild(o);
+      });
+    }
+    fillSelect('ct-filter-job', uniqueJobs);
+    fillSelect('ct-filter-stage', uniqueStages);
+    fillSelect('ct-filter-status', uniqueStatuses);
+    fillSelect('ct-filter-source', uniqueSources);
+  }
+
+  function getFilterValues() {
+    return {
+      job: (document.getElementById('ct-filter-job') || {}).value || '',
+      stage: (document.getElementById('ct-filter-stage') || {}).value || '',
+      status: (document.getElementById('ct-filter-status') || {}).value || '',
+      source: (document.getElementById('ct-filter-source') || {}).value || ''
+    };
+  }
+
+  function applyFilterAndSort(lastRaw) {
+    var f = getFilterValues();
+    var filtered = fullData.filter(function (row) {
+      var job = getDisplayVal(row, 'job', fullColumnNames, fullIndices);
+      var stage = getDisplayVal(row, 'stage', fullColumnNames, fullIndices);
+      var status = getDisplayVal(row, 'status', fullColumnNames, fullIndices);
+      var source = getDisplayVal(row, 'source', fullColumnNames, fullIndices);
+      if (f.job && job !== f.job) return false;
+      if (f.stage && stage !== f.stage) return false;
+      if (f.status && status !== f.status) return false;
+      if (f.source && source !== f.source) return false;
+      return true;
+    });
+    if (sortBy) {
+      var key = sortBy;
+      var mult = sortDir;
+      filtered.sort(function (a, b) {
+        var va = getVal(a, key, fullColumnNames, fullIndices);
+        var vb = getVal(b, key, fullColumnNames, fullIndices);
+        if (key === 'statusDate') {
+          var da = formatDate(va);
+          var db = formatDate(vb);
+          if (!da && !db) return 0;
+          if (!da) return 1;
+          if (!db) return -1;
+          return mult * (new Date(va) - new Date(vb));
+        }
+        var sa = String(va || '').toLowerCase();
+        var sb = String(vb || '').toLowerCase();
+        if (sa < sb) return -mult;
+        if (sa > sb) return mult;
+        return 0;
+      });
+    }
+    renderTable(fullColumnNames, filtered, lastRaw && lastRaw._debug, lastRaw, fullJobToIndex);
+    var metaEl = document.getElementById('ct-meta');
+    if (metaEl) metaEl.textContent = (metaEl.getAttribute('data-sync-text') || '') + (filtered.length !== fullData.length ? ' · Showing ' + filtered.length + ' of ' + fullData.length : '');
+    var icons = document.querySelectorAll('.ct-sort-icon');
+    for (var i = 0; i < icons.length; i++) icons[i].textContent = '';
+    var th = sortBy && document.getElementById('ct-th-' + sortBy);
+    if (th) {
+      var icon = th.querySelector('.ct-sort-icon');
+      if (icon) icon.textContent = sortDir === 1 ? ' ↑' : ' ↓';
+    }
+  }
+
   function setLoading(show) {
     document.getElementById('ct-loading').hidden = !show;
   }
@@ -318,13 +427,75 @@
           columnNames = data[0];
           data = data.slice(1);
         }
-        renderTable(columnNames, data, raw._debug, raw);
-        setMeta('Last synced ' + new Date().toLocaleString() + (data.length ? ' · ' + data.length + ' row(s)' : ''));
+        var firstRow = data[0];
+        var isFirstRowHeader = firstRow && columnNames.length === firstRow.length &&
+          columnNames.every(function (h, i) { return String((Array.isArray(firstRow) ? firstRow[i] : firstRow[h]) || '').trim() === String(h || '').trim(); });
+        var rows = isFirstRowHeader ? data.slice(1) : data;
+
+        fullColumnNames = columnNames;
+        fullData = rows;
+        fullIndices = (function () {
+          var i = {};
+          i.name = findColumnIndex(columnNames, possibleNames);
+          i.job = findColumnIndex(columnNames, possibleJobs, [i.name]);
+          i.stage = findColumnIndex(columnNames, possibleStages, [i.name, i.job]);
+          i.status = findColumnIndex(columnNames, possibleStatus, [i.name, i.job, i.stage]);
+          i.statusDate = findColumnIndex(columnNames, possibleStatusDate, [i.name, i.job, i.stage, i.status]);
+          if (i.statusDate < 0) i.statusDate = findFirstDateLikeColumn(columnNames, [i.name, i.job, i.stage, i.status]);
+          i.source = findColumnIndex(columnNames, possibleSource, [i.name, i.job, i.stage, i.status, i.statusDate]);
+          return i;
+        })();
+        fullJobToIndex = {};
+        var jobIdx = 0;
+        for (var r = 0; r < rows.length; r++) {
+          var j = getDisplayVal(rows[r], 'job', columnNames, fullIndices);
+          if (fullJobToIndex[j] === undefined) fullJobToIndex[j] = jobIdx++;
+        }
+        var jobSet = {};
+        var stageSet = {};
+        var statusSet = {};
+        var sourceSet = {};
+        for (var r = 0; r < rows.length; r++) {
+          jobSet[getDisplayVal(rows[r], 'job', columnNames, fullIndices)] = true;
+          stageSet[getDisplayVal(rows[r], 'stage', columnNames, fullIndices)] = true;
+          statusSet[getDisplayVal(rows[r], 'status', columnNames, fullIndices)] = true;
+          sourceSet[getDisplayVal(rows[r], 'source', columnNames, fullIndices)] = true;
+        }
+        uniqueJobs = Object.keys(jobSet).filter(Boolean).sort();
+        uniqueStages = Object.keys(stageSet).filter(Boolean).sort();
+        uniqueStatuses = Object.keys(statusSet).filter(Boolean).sort();
+        uniqueSources = Object.keys(sourceSet).filter(Boolean).sort();
+
+        var syncText = 'Last synced ' + new Date().toLocaleString() + ' · ' + rows.length + ' row(s)';
+        setMeta(syncText);
+        var metaEl = document.getElementById('ct-meta');
+        if (metaEl) metaEl.setAttribute('data-sync-text', syncText + ' ');
+
         var hintEl = document.getElementById('ct-column-hint');
         if (hintEl && columnNames.length) {
           hintEl.hidden = false;
           hintEl.textContent = 'Report columns: ' + columnNames.join(', ') + '. Status date maps to the first matching date column.';
         }
+
+        var filtersEl = document.getElementById('ct-filters');
+        if (filtersEl) {
+          filtersEl.hidden = false;
+          populateFilterOptions();
+          document.getElementById('ct-filter-job').addEventListener('change', function () { applyFilterAndSort(raw); });
+          document.getElementById('ct-filter-stage').addEventListener('change', function () { applyFilterAndSort(raw); });
+          document.getElementById('ct-filter-status').addEventListener('change', function () { applyFilterAndSort(raw); });
+          document.getElementById('ct-filter-source').addEventListener('change', function () { applyFilterAndSort(raw); });
+        }
+        document.querySelectorAll('.ct-sortable').forEach(function (th) {
+          th.addEventListener('click', function () {
+            var key = th.getAttribute('data-sort');
+            if (!key) return;
+            if (sortBy === key) sortDir = -sortDir; else { sortBy = key; sortDir = 1; }
+            applyFilterAndSort(raw);
+          });
+        });
+
+        applyFilterAndSort(raw);
       })
       .catch(function (err) {
         setLoading(false);
