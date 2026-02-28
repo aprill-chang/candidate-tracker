@@ -56,18 +56,29 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // Unwrap if Ashby nests under results or similar
-    const resolved = data.results && typeof data.results === 'object'
-      ? data.results
-      : data;
-    const dataArray = resolved.data || resolved.rows || data.data || data.rows || [];
-    const columns = resolved.columnNames || resolved.columnNamesList || data.columnNames || data.columnNamesList || [];
+    // Unwrap: Ashby returns { success, results: { ... } }
+    const results = data.results && typeof data.results === 'object' ? data.results : data;
+    const resultsKeys = results ? Object.keys(results) : [];
+    let dataArray = results.data || results.rows || results.values || results.records || results.reportData || data.data || data.rows || [];
+    let columns = results.columnNames || results.columnNamesList || results.columns || data.columnNames || data.columnNamesList || [];
+    if (!Array.isArray(dataArray) || dataArray.length === 0) {
+      for (const k of resultsKeys) {
+        const v = results[k];
+        if (Array.isArray(v) && v.length > 0) {
+          dataArray = v;
+          if (!columns.length && v[0] && typeof v[0] === 'object' && !Array.isArray(v[0])) columns = Object.keys(v[0]);
+          else if (!columns.length && Array.isArray(v[0])) columns = (results.columnNames || results.columns || data.columnNames || v[0]) || [];
+          break;
+        }
+      }
+    }
 
     const payload = {
       columnNames: columns,
       data: dataArray,
       _debug: {
         topLevelKeys: Object.keys(data),
+        resultsKeys: resultsKeys,
         dataLength: Array.isArray(dataArray) ? dataArray.length : 0,
         columnNamesLength: Array.isArray(columns) ? columns.length : 0,
         firstRowType: Array.isArray(dataArray) && dataArray[0] != null ? typeof dataArray[0] : null,
