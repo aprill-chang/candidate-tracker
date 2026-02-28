@@ -83,9 +83,9 @@
 
   function findColumnIndex(columnNames, possible, excludeIndices) {
     var exclude = excludeIndices || [];
-    var lower = columnNames.map(function (c) { return (c || '').toLowerCase().trim(); });
+    var lower = columnNames.map(function (c) { return (c || '').toLowerCase().trim().replace(/\s+/g, ' '); });
     for (var i = 0; i < possible.length; i++) {
-      var p = possible[i];
+      var p = (possible[i] || '').toLowerCase().trim().replace(/\s+/g, ' ');
       for (var j = 0; j < lower.length; j++) {
         if (exclude.indexOf(j) !== -1) continue;
         if (lower[j].indexOf(p) !== -1 || p.indexOf(lower[j]) !== -1) return j;
@@ -98,7 +98,7 @@
     var exclude = excludeIndices || [];
     for (var j = 0; j < columnNames.length; j++) {
       if (exclude.indexOf(j) !== -1) continue;
-      var lower = (columnNames[j] || '').toLowerCase().trim();
+      var lower = (columnNames[j] || '').toLowerCase().trim().replace(/\s+/g, ' ');
       if (lower.indexOf('ashby') !== -1 && lower.indexOf('candidate') !== -1 && lower.indexOf('id') !== -1) return j;
     }
     return -1;
@@ -167,7 +167,14 @@
     if (colIndex < 0) return '';
     if (Array.isArray(row)) return row[colIndex];
     var key = columnNames[colIndex];
-    return key != null ? row[key] : '';
+    if (key != null && row[key] !== undefined && row[key] !== '') return row[key];
+    if (row && typeof row === 'object' && key) {
+      var keyLower = String(key).toLowerCase().trim();
+      for (var k in row) {
+        if (Object.prototype.hasOwnProperty.call(row, k) && (k || '').toLowerCase().trim() === keyLower) return row[k];
+      }
+    }
+    return '';
   }
 
   function getCandidateId(row, columnNames, indices) {
@@ -177,8 +184,12 @@
     }
     if (row && typeof row === 'object' && !Array.isArray(row)) {
       var target = 'ashby candidate id';
+      var targetNoSpaces = target.replace(/\s+/g, '');
       for (var k in row) {
-        if (Object.prototype.hasOwnProperty.call(row, k) && (k || '').toLowerCase().trim() === target) {
+        if (!Object.prototype.hasOwnProperty.call(row, k)) continue;
+        var keyLower = (k || '').toLowerCase().trim();
+        var keyNoSpaces = keyLower.replace(/\s+/g, '');
+        if (keyLower === target || keyNoSpaces === targetNoSpaces) {
           var v = row[k];
           if (v != null && v !== '') return String(v).trim();
         }
@@ -598,7 +609,10 @@
         var hintEl = document.getElementById('ct-column-hint');
         if (hintEl && columnNames.length) {
           hintEl.hidden = false;
-          hintEl.textContent = 'Report columns: ' + columnNames.join(', ') + '. Status date maps to the first matching date column.';
+          var idColName = fullIndices.id >= 0 ? columnNames[fullIndices.id] : 'none';
+          var sampleId = rows.length ? getCandidateId(rows[0], columnNames, fullIndices) : '';
+          var linkHint = ' Profile links: ' + (fullIndices.id >= 0 ? 'column "' + idColName + '"' : 'no ID column found') + (sampleId ? ', sample ID: ' + sampleId.substring(0, 8) + '…' : fullIndices.id >= 0 ? ' (first row empty)' : '');
+          hintEl.textContent = 'Report columns: ' + columnNames.join(', ') + '. Status date maps to the first matching date column.' + linkHint;
         }
 
         var filtersEl = document.getElementById('ct-filters');
