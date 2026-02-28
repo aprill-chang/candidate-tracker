@@ -56,29 +56,47 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // Unwrap: Ashby returns { success, results: { ... } }
+    // Unwrap: Ashby returns { success, results: { requestId, status, reportData, failureReason } }
     const results = data.results && typeof data.results === 'object' ? data.results : data;
-    const resultsKeys = results ? Object.keys(results) : [];
-    let dataArray = results.data || results.rows || results.values || results.records || results.reportData || data.data || data.rows || [];
-    let columns = results.columnNames || results.columnNamesList || results.columns || data.columnNames || data.columnNamesList || [];
-    if (!Array.isArray(dataArray) || dataArray.length === 0) {
-      for (const k of resultsKeys) {
-        const v = results[k];
-        if (Array.isArray(v) && v.length > 0) {
-          dataArray = v;
-          if (!columns.length && v[0] && typeof v[0] === 'object' && !Array.isArray(v[0])) columns = Object.keys(v[0]);
-          else if (!columns.length && Array.isArray(v[0])) columns = (results.columnNames || results.columns || data.columnNames || v[0]) || [];
-          break;
+    const reportData = results.reportData;
+    let dataArray = [];
+    let columns = [];
+
+    if (reportData != null) {
+      if (Array.isArray(reportData)) {
+        dataArray = reportData;
+        if (dataArray[0] && typeof dataArray[0] === 'object' && !Array.isArray(dataArray[0])) columns = Object.keys(dataArray[0]);
+        else if (Array.isArray(dataArray[0])) columns = results.columnNames || results.columns || data.columnNames || dataArray[0] || [];
+      } else if (typeof reportData === 'object') {
+        dataArray = reportData.data || reportData.rows || reportData.values || [];
+        columns = reportData.columnNames || reportData.columns || reportData.columnNamesList || [];
+        if (!Array.isArray(dataArray) || dataArray.length === 0) {
+          for (const key of Object.keys(reportData)) {
+            const val = reportData[key];
+            if (Array.isArray(val) && val.length > 0) {
+              dataArray = val;
+              if (!columns.length && key !== 'columnNames' && key !== 'columns') columns = reportData.columnNames || reportData.columns || (Array.isArray(val[0]) ? val[0] : (val[0] && typeof val[0] === 'object' ? Object.keys(val[0]) : []));
+              break;
+            }
+          }
         }
+        if (!columns.length) columns = reportData.columnNames || reportData.columns || [];
       }
     }
+    if (!Array.isArray(dataArray)) dataArray = [];
+    if (!Array.isArray(columns)) columns = [];
 
     const payload = {
       columnNames: columns,
       data: dataArray,
+      _status: results.status,
+      _failureReason: results.failureReason || null,
+      _requestId: results.requestId || null,
       _debug: {
         topLevelKeys: Object.keys(data),
-        resultsKeys: resultsKeys,
+        resultsKeys: results ? Object.keys(results) : [],
+        reportDataType: reportData == null ? null : Array.isArray(reportData) ? 'array' : typeof reportData,
+        reportDataLength: Array.isArray(reportData) ? reportData.length : (reportData && typeof reportData === 'object' && reportData.data ? (reportData.data.length || 0) : 0),
         dataLength: Array.isArray(dataArray) ? dataArray.length : 0,
         columnNamesLength: Array.isArray(columns) ? columns.length : 0,
         firstRowType: Array.isArray(dataArray) && dataArray[0] != null ? typeof dataArray[0] : null,

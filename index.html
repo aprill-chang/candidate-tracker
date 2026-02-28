@@ -107,7 +107,7 @@
     return key != null ? row[key] : '';
   }
 
-  function renderTable(columnNames, data, debug) {
+  function renderTable(columnNames, data, debug, response) {
     var tbody = document.getElementById('ct-tbody');
     var wrap = document.getElementById('ct-table-wrap');
     tbody.textContent = '';
@@ -119,6 +119,10 @@
       emptyCell.colSpan = 5;
       emptyCell.className = 'ct-empty-message';
       var msg = 'No candidate rows in the report. Check that your Ashby report has data and that filters are saved.';
+      var status = response && response._status;
+      var reason = response && response._failureReason;
+      if (status) msg += ' (Status: ' + status + ')';
+      if (reason) msg += ' Reason: ' + reason + '.';
       if (debug) {
         msg += ' [Debug: ' + JSON.stringify(debug) + ']';
       }
@@ -244,7 +248,7 @@
           columnNames = data[0];
           data = data.slice(1);
         }
-        renderTable(columnNames, data, raw._debug);
+        renderTable(columnNames, data, raw._debug, raw);
         setMeta('Last synced ' + new Date().toLocaleString() + (data.length ? ' · ' + data.length + ' row(s)' : ''));
       })
       .catch(function (err) {
