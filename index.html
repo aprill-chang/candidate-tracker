@@ -79,7 +79,9 @@
   var possibleStatusDate = ['activity status due at', 'status date', 'status changed', 'interview date', 'next interview date', 'next interview', 'scheduled date', 'scheduled at', 'scheduled for', 'interview scheduled', 'scheduled', 'current interview date', 'upcoming interview', 'last updated', 'updated at', 'updated', 'stage change date', 'stage changed', 'last activity', 'date scheduled', 'date'];
   var possibleSource = ['source', 'credited to', 'referral', 'sourcing source'];
   var possibleIds = ['ashby candidate id', 'candidate id', 'id', 'candidateId', 'candidate_id'];
+  var possibleApplicationIds = ['ashby job id', 'application id', 'job application id', 'ashby application id', 'applicationId', 'application_id', 'consideration id'];
   var ASHBY_PEOPLE_BASE = 'https://app.ashbyhq.com/people/';
+  var ASHBY_CANDIDATE_FEED_BASE = 'https://app.ashbyhq.com/home/upcoming/right-side/candidates/';
 
   function findColumnIndex(columnNames, possible, excludeIndices) {
     var exclude = excludeIndices || [];
@@ -100,6 +102,17 @@
       if (exclude.indexOf(j) !== -1) continue;
       var lower = (columnNames[j] || '').toLowerCase().trim().replace(/\s+/g, ' ');
       if (lower.indexOf('ashby') !== -1 && lower.indexOf('candidate') !== -1 && lower.indexOf('id') !== -1) return j;
+    }
+    return -1;
+  }
+
+  function findApplicationIdColumn(columnNames, excludeIndices) {
+    var exclude = excludeIndices || [];
+    for (var j = 0; j < columnNames.length; j++) {
+      if (exclude.indexOf(j) !== -1) continue;
+      var lower = (columnNames[j] || '').toLowerCase().trim().replace(/\s+/g, ' ');
+      if ((lower.indexOf('ashby') !== -1 && lower.indexOf('job') !== -1 && lower.indexOf('id') !== -1) ||
+          (lower.indexOf('application') !== -1 && lower.indexOf('id') !== -1)) return j;
     }
     return -1;
   }
@@ -207,6 +220,28 @@
     return '';
   }
 
+  function getApplicationId(row, columnNames, indices) {
+    if (indices.applicationId >= 0) {
+      var val = String(cellValue(row, indices.applicationId, columnNames) || '').trim();
+      if (val) return val;
+    }
+    if (row && typeof row === 'object' && !Array.isArray(row)) {
+      var targetVariants = ['ashby job id', 'application id', 'job application id', 'ashby application id', 'applicationid'];
+      for (var k in row) {
+        if (!Object.prototype.hasOwnProperty.call(row, k)) continue;
+        var keyLower = (k || '').toLowerCase().trim().replace(/\s+/g, ' ');
+        var keyNoSpaces = keyLower.replace(/\s+/g, '');
+        for (var t = 0; t < targetVariants.length; t++) {
+          if (keyLower.indexOf(targetVariants[t]) !== -1 || keyNoSpaces.indexOf(targetVariants[t].replace(/\s/g, '')) !== -1) {
+            var v = row[k];
+            if (v != null && v !== '') return String(v).trim();
+          }
+        }
+      }
+    }
+    return '';
+  }
+
   function hashToIndex(str) {
     var h = 0;
     for (var i = 0; i < str.length; i++) h = ((h << 5) - h) + str.charCodeAt(i) | 0;
@@ -282,6 +317,8 @@
       i.source = findColumnIndex(columnNames, possibleSource, [i.name, i.job, i.stage, i.status, i.statusDate]);
       i.id = findColumnIndex(columnNames, possibleIds, [i.name, i.job, i.stage, i.status, i.statusDate, i.source]);
       if (i.id < 0) i.id = findAshbyCandidateIdColumn(columnNames, [i.name, i.job, i.stage, i.status, i.statusDate, i.source]);
+      i.applicationId = findColumnIndex(columnNames, possibleApplicationIds, [i.name, i.job, i.stage, i.status, i.statusDate, i.source, i.id]);
+      if (i.applicationId < 0) i.applicationId = findApplicationIdColumn(columnNames, [i.name, i.job, i.stage, i.status, i.statusDate, i.source, i.id]);
       return i;
     })();
     var rows = data;
@@ -307,10 +344,15 @@
 
       var tdName = document.createElement('td');
       var candidateId = getCandidateId(row, columnNames, indices);
+      var applicationId = getApplicationId(row, columnNames, indices);
       var nameDisplay = escapeText(nameVal) || '—';
       if (candidateId) {
         var link = document.createElement('a');
-        link.href = ASHBY_PEOPLE_BASE + encodeURIComponent(candidateId);
+        if (applicationId) {
+          link.href = ASHBY_CANDIDATE_FEED_BASE + encodeURIComponent(candidateId) + '/applications/' + encodeURIComponent(applicationId) + '/feed';
+        } else {
+          link.href = ASHBY_PEOPLE_BASE + encodeURIComponent(candidateId);
+        }
         link.target = '_blank';
         link.rel = 'noopener noreferrer';
         link.textContent = nameDisplay;
@@ -578,6 +620,8 @@
           i.source = findColumnIndex(columnNames, possibleSource, [i.name, i.job, i.stage, i.status, i.statusDate]);
           i.id = findColumnIndex(columnNames, possibleIds, [i.name, i.job, i.stage, i.status, i.statusDate, i.source]);
           if (i.id < 0) i.id = findAshbyCandidateIdColumn(columnNames, [i.name, i.job, i.stage, i.status, i.statusDate, i.source]);
+          i.applicationId = findColumnIndex(columnNames, possibleApplicationIds, [i.name, i.job, i.stage, i.status, i.statusDate, i.source, i.id]);
+          if (i.applicationId < 0) i.applicationId = findApplicationIdColumn(columnNames, [i.name, i.job, i.stage, i.status, i.statusDate, i.source, i.id]);
           return i;
         })();
         fullJobToIndex = {};
