@@ -94,9 +94,16 @@ body.candidate-tracker-page {
 .ct-filters {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
   gap: 1rem;
   margin-bottom: 1rem;
+}
+
+.ct-filter-hint {
+  width: 100%;
+  margin: 0 0 0.25rem;
+  font-size: 0.75rem;
+  color: var(--ct-text-muted);
 }
 
 .ct-filter-label {
@@ -122,6 +129,15 @@ body.candidate-tracker-page {
   border-radius: 6px;
   min-width: 140px;
   cursor: pointer;
+}
+
+.ct-filter-multi {
+  min-height: 6rem;
+  min-width: 160px;
+}
+
+.ct-filter-multi option {
+  padding: 0.2rem 0;
 }
 
 .ct-sortable {

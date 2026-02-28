@@ -18,17 +18,18 @@
     <div id="ct-error" class="ct-error" hidden></div>
     <p id="ct-column-hint" class="ct-column-hint" hidden aria-live="polite"></p>
     <div id="ct-filters" class="ct-filters" hidden>
+      <p class="ct-filter-hint">Hold Ctrl (Windows) or Cmd (Mac) to select multiple. Empty = show all.</p>
       <label class="ct-filter-label"><span>Job</span>
-        <select id="ct-filter-job" class="ct-filter-select" aria-label="Filter by job"></select>
+        <select id="ct-filter-job" class="ct-filter-select ct-filter-multi" multiple aria-label="Filter by job (multi-select)"></select>
       </label>
       <label class="ct-filter-label"><span>Stage</span>
-        <select id="ct-filter-stage" class="ct-filter-select" aria-label="Filter by interview stage"></select>
+        <select id="ct-filter-stage" class="ct-filter-select ct-filter-multi" multiple aria-label="Filter by interview stage (multi-select)"></select>
       </label>
       <label class="ct-filter-label"><span>Status</span>
-        <select id="ct-filter-status" class="ct-filter-select" aria-label="Filter by status"></select>
+        <select id="ct-filter-status" class="ct-filter-select ct-filter-multi" multiple aria-label="Filter by status (multi-select)"></select>
       </label>
       <label class="ct-filter-label"><span>Source</span>
-        <select id="ct-filter-source" class="ct-filter-select" aria-label="Filter by source"></select>
+        <select id="ct-filter-source" class="ct-filter-select ct-filter-multi" multiple aria-label="Filter by source (multi-select)"></select>
       </label>
     </div>
     <div class="ct-table-wrap" id="ct-table-wrap" hidden>
@@ -311,10 +312,6 @@
       var sel = document.getElementById(id);
       if (!sel) return;
       sel.textContent = '';
-      var all = document.createElement('option');
-      all.value = '';
-      all.textContent = 'All';
-      sel.appendChild(all);
       options.forEach(function (opt) {
         var o = document.createElement('option');
         o.value = opt;
@@ -329,11 +326,15 @@
   }
 
   function getFilterValues() {
+    function selectedValues(sel) {
+      if (!sel) return [];
+      return Array.from(sel.selectedOptions || []).map(function (o) { return o.value; });
+    }
     return {
-      job: (document.getElementById('ct-filter-job') || {}).value || '',
-      stage: (document.getElementById('ct-filter-stage') || {}).value || '',
-      status: (document.getElementById('ct-filter-status') || {}).value || '',
-      source: (document.getElementById('ct-filter-source') || {}).value || ''
+      job: selectedValues(document.getElementById('ct-filter-job')),
+      stage: selectedValues(document.getElementById('ct-filter-stage')),
+      status: selectedValues(document.getElementById('ct-filter-status')),
+      source: selectedValues(document.getElementById('ct-filter-source'))
     };
   }
 
@@ -344,10 +345,10 @@
       var stage = getDisplayVal(row, 'stage', fullColumnNames, fullIndices);
       var status = getDisplayVal(row, 'status', fullColumnNames, fullIndices);
       var source = getDisplayVal(row, 'source', fullColumnNames, fullIndices);
-      if (f.job && job !== f.job) return false;
-      if (f.stage && stage !== f.stage) return false;
-      if (f.status && status !== f.status) return false;
-      if (f.source && source !== f.source) return false;
+      if (f.job.length > 0 && f.job.indexOf(job) === -1) return false;
+      if (f.stage.length > 0 && f.stage.indexOf(stage) === -1) return false;
+      if (f.status.length > 0 && f.status.indexOf(status) === -1) return false;
+      if (f.source.length > 0 && f.source.indexOf(source) === -1) return false;
       return true;
     });
     if (sortBy) {
