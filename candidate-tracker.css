@@ -111,6 +111,7 @@ body.candidate-tracker-page {
 .ct-filter-cell .ct-dropdown-trigger {
   width: 100%;
   min-width: 0;
+  min-height: 2rem;
   box-sizing: border-box;
 }
 
@@ -197,19 +198,28 @@ body.candidate-tracker-page {
 .ct-filter-status-date {
   width: 100%;
   min-width: 0;
+  min-height: 2rem;
   box-sizing: border-box;
   padding: 0.4rem 1.75rem 0.4rem 0.6rem;
   font-family: var(--ct-font);
   font-size: 0.8125rem;
+  line-height: 1.25;
   color: var(--ct-text);
-  background: var(--ct-surface);
+  background-color: var(--ct-surface);
   border: 1px solid var(--ct-border);
   border-radius: 6px;
   cursor: pointer;
   appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpath d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 0.5rem center;
+}
+
+.ct-filter-cell .ct-filter-status-date {
+  width: 100%;
+  min-width: 0;
 }
 
 .ct-filter-status-date:hover {

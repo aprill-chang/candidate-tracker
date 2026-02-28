@@ -16,7 +16,6 @@
 
     <div id="ct-loading" class="ct-loading" hidden>Loading report…</div>
     <div id="ct-error" class="ct-error" hidden></div>
-    <p id="ct-column-hint" class="ct-column-hint" hidden aria-live="polite"></p>
     <section class="ct-section" id="ct-active-section" hidden>
       <h2 class="ct-section-title">Active candidates</h2>
       <div class="ct-table-wrap" id="ct-table-wrap">
@@ -919,15 +918,6 @@
         setMeta(syncText);
         var metaEl = document.getElementById('ct-meta');
         if (metaEl) metaEl.setAttribute('data-sync-text', syncText + ' ');
-
-        var hintEl = document.getElementById('ct-column-hint');
-        if (hintEl && columnNames.length) {
-          hintEl.hidden = false;
-          var idColName = fullIndices.id >= 0 ? columnNames[fullIndices.id] : 'none';
-          var sampleId = rows.length ? getCandidateId(rows[0], columnNames, fullIndices) : '';
-          var linkHint = ' Profile links: ' + (fullIndices.id >= 0 ? 'column "' + idColName + '"' : 'no ID column found') + (sampleId ? ', sample ID: ' + sampleId.substring(0, 8) + '…' : fullIndices.id >= 0 ? ' (first row empty)' : '');
-          hintEl.textContent = 'Report columns: ' + columnNames.join(', ') + '. Status date maps to the first matching date column.' + linkHint;
-        }
 
         populateFilterOptions();
         ['job', 'stage', 'status', 'source'].forEach(function (k) { setupDropdown(k, raw); });
