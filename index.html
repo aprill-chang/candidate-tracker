@@ -48,22 +48,44 @@
         </div>
       </div>
     </div>
-    <div class="ct-table-wrap" id="ct-table-wrap" hidden>
-      <table class="ct-table" id="ct-table" role="grid">
-        <thead>
-          <tr>
-            <th scope="col" class="ct-sortable" data-sort="name" id="ct-th-name">Candidate name <span class="ct-sort-icon" aria-hidden="true"></span></th>
-            <th scope="col" class="ct-sortable" data-sort="job" id="ct-th-job">Candidate job <span class="ct-sort-icon" aria-hidden="true"></span></th>
-            <th scope="col" class="ct-sortable" data-sort="stage" id="ct-th-stage">Current interview stage <span class="ct-sort-icon" aria-hidden="true"></span></th>
-            <th scope="col" class="ct-sortable" data-sort="status" id="ct-th-status">Status <span class="ct-sort-icon" aria-hidden="true"></span></th>
-            <th scope="col" class="ct-sortable" data-sort="statusDate" id="ct-th-statusDate">Status date <span class="ct-sort-icon" aria-hidden="true"></span></th>
-            <th scope="col" class="ct-sortable" data-sort="source" id="ct-th-source">Source <span class="ct-sort-icon" aria-hidden="true"></span></th>
-            <th scope="col">Note</th>
-          </tr>
-        </thead>
-        <tbody id="ct-tbody"></tbody>
-      </table>
-    </div>
+    <section class="ct-section" id="ct-active-section" hidden>
+      <h2 class="ct-section-title">Active candidates</h2>
+      <div class="ct-table-wrap" id="ct-table-wrap">
+        <table class="ct-table" id="ct-table" role="grid">
+          <thead>
+            <tr>
+              <th scope="col" class="ct-sortable" data-sort="name" id="ct-th-name">Candidate name <span class="ct-sort-icon" aria-hidden="true"></span></th>
+              <th scope="col" class="ct-sortable" data-sort="job" id="ct-th-job">Candidate job <span class="ct-sort-icon" aria-hidden="true"></span></th>
+              <th scope="col" class="ct-sortable" data-sort="stage" id="ct-th-stage">Current interview stage <span class="ct-sort-icon" aria-hidden="true"></span></th>
+              <th scope="col" class="ct-sortable" data-sort="status" id="ct-th-status">Status <span class="ct-sort-icon" aria-hidden="true"></span></th>
+              <th scope="col" class="ct-sortable" data-sort="statusDate" id="ct-th-statusDate">Status date <span class="ct-sort-icon" aria-hidden="true"></span></th>
+              <th scope="col" class="ct-sortable" data-sort="source" id="ct-th-source">Source <span class="ct-sort-icon" aria-hidden="true"></span></th>
+              <th scope="col">Note</th>
+            </tr>
+          </thead>
+          <tbody id="ct-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+    <section class="ct-section" id="ct-archived-section" hidden>
+      <h2 class="ct-section-title">Archived candidates</h2>
+      <div class="ct-table-wrap" id="ct-archived-table-wrap">
+        <table class="ct-table" id="ct-archived-table" role="grid">
+          <thead>
+            <tr>
+              <th scope="col">Candidate name</th>
+              <th scope="col">Candidate job</th>
+              <th scope="col">Current interview stage</th>
+              <th scope="col">Status</th>
+              <th scope="col">Status date</th>
+              <th scope="col">Source</th>
+              <th scope="col">Note</th>
+            </tr>
+          </thead>
+          <tbody id="ct-archived-tbody"></tbody>
+        </table>
+      </div>
+    </section>
   </div>
 
   <script>
@@ -285,53 +307,8 @@
   var sortBy = '';
   var sortDir = 1;
 
-  function renderTable(columnNames, data, debug, response, jobToIndexOverride) {
-    var tbody = document.getElementById('ct-tbody');
-    var wrap = document.getElementById('ct-table-wrap');
+  function renderTableBody(tbody, columnNames, rows, indices, jobToIndex) {
     tbody.textContent = '';
-
-    if (!columnNames.length || !data.length) {
-      wrap.hidden = false;
-      if (fullData.length > 0) {
-        /* No candidates match filters: show blank (empty body) */
-      } else {
-        var emptyRow = document.createElement('tr');
-        var emptyCell = document.createElement('td');
-        emptyCell.colSpan = 7;
-        emptyCell.className = 'ct-empty-message';
-        emptyCell.textContent = 'No candidate rows in the report. Check that your Ashby report has data and that filters are saved.';
-        emptyRow.appendChild(emptyCell);
-        tbody.appendChild(emptyRow);
-      }
-      return;
-    }
-
-    var indices = fullIndices || (function () {
-      var i = {};
-      i.name = findColumnIndex(columnNames, possibleNames);
-      i.job = findColumnIndex(columnNames, possibleJobs, [i.name]);
-      i.stage = findColumnIndex(columnNames, possibleStages, [i.name, i.job]);
-      i.status = findColumnIndex(columnNames, possibleStatus, [i.name, i.job, i.stage]);
-      i.statusDate = findColumnIndex(columnNames, possibleStatusDate, [i.name, i.job, i.stage, i.status]);
-      if (i.statusDate < 0) i.statusDate = findFirstDateLikeColumn(columnNames, [i.name, i.job, i.stage, i.status]);
-      i.source = findColumnIndex(columnNames, possibleSource, [i.name, i.job, i.stage, i.status, i.statusDate]);
-      i.applicationId = findColumnIndex(columnNames, possibleApplicationIds, [i.name, i.job, i.stage, i.status, i.statusDate, i.source]);
-      if (i.applicationId < 0) i.applicationId = findApplicationIdColumn(columnNames, [i.name, i.job, i.stage, i.status, i.statusDate, i.source]);
-      i.id = findColumnIndex(columnNames, possibleIds, [i.name, i.job, i.stage, i.status, i.statusDate, i.source, i.applicationId]);
-      if (i.id < 0) i.id = findAshbyCandidateIdColumn(columnNames, [i.name, i.job, i.stage, i.status, i.statusDate, i.source, i.applicationId]);
-      return i;
-    })();
-    var rows = data;
-    var jobToIndex = jobToIndexOverride || (function () {
-      var map = {};
-      var idx = 0;
-      for (var r = 0; r < rows.length; r++) {
-        var j = escapeText(cellValue(rows[r], indices.job, columnNames)) || '—';
-        if (map[j] === undefined) map[j] = idx++;
-      }
-      return map;
-    })();
-
     for (var r = 0; r < rows.length; r++) {
       var row = rows[r];
       var rowId = buildRowId(row, indices, columnNames, r);
@@ -406,8 +383,91 @@
 
       tbody.appendChild(tr);
     }
+  }
 
-    wrap.hidden = false;
+  function renderTable(columnNames, activeData, archivedData, debug, response, jobToIndexOverride) {
+    var tbody = document.getElementById('ct-tbody');
+    var archivedTbody = document.getElementById('ct-archived-tbody');
+    var activeSection = document.getElementById('ct-active-section');
+    var archivedSection = document.getElementById('ct-archived-section');
+    var wrap = document.getElementById('ct-table-wrap');
+    tbody.textContent = '';
+    if (archivedTbody) archivedTbody.textContent = '';
+
+    if (!columnNames.length) {
+      activeSection.hidden = false;
+      if (archivedSection) archivedSection.hidden = true;
+      if (fullData.length > 0) {
+        /* no columns but we have data: leave tables blank */
+      } else {
+        var emptyRow = document.createElement('tr');
+        var emptyCell = document.createElement('td');
+        emptyCell.colSpan = 7;
+        emptyCell.className = 'ct-empty-message';
+        emptyCell.textContent = 'No candidate rows in the report. Check that your Ashby report has data and that filters are saved.';
+        emptyRow.appendChild(emptyCell);
+        tbody.appendChild(emptyRow);
+      }
+      return;
+    }
+
+    activeSection.hidden = false;
+    if (archivedSection) archivedSection.hidden = true;
+
+    var indices = fullIndices || (function () {
+      var i = {};
+      i.name = findColumnIndex(columnNames, possibleNames);
+      i.job = findColumnIndex(columnNames, possibleJobs, [i.name]);
+      i.stage = findColumnIndex(columnNames, possibleStages, [i.name, i.job]);
+      i.status = findColumnIndex(columnNames, possibleStatus, [i.name, i.job, i.stage]);
+      i.statusDate = findColumnIndex(columnNames, possibleStatusDate, [i.name, i.job, i.stage, i.status]);
+      if (i.statusDate < 0) i.statusDate = findFirstDateLikeColumn(columnNames, [i.name, i.job, i.stage, i.status]);
+      i.source = findColumnIndex(columnNames, possibleSource, [i.name, i.job, i.stage, i.status, i.statusDate]);
+      i.applicationId = findColumnIndex(columnNames, possibleApplicationIds, [i.name, i.job, i.stage, i.status, i.statusDate, i.source]);
+      if (i.applicationId < 0) i.applicationId = findApplicationIdColumn(columnNames, [i.name, i.job, i.stage, i.status, i.statusDate, i.source]);
+      i.id = findColumnIndex(columnNames, possibleIds, [i.name, i.job, i.stage, i.status, i.statusDate, i.source, i.applicationId]);
+      if (i.id < 0) i.id = findAshbyCandidateIdColumn(columnNames, [i.name, i.job, i.stage, i.status, i.statusDate, i.source, i.applicationId]);
+      return i;
+    })();
+    var allRows = (activeData || []).concat(archivedData || []);
+    var jobToIndex = jobToIndexOverride || (function () {
+      var map = {};
+      var idx = 0;
+      for (var r = 0; r < allRows.length; r++) {
+        var j = escapeText(cellValue(allRows[r], indices.job, columnNames)) || '—';
+        if (map[j] === undefined) map[j] = idx++;
+      }
+      return map;
+    })();
+
+    if (activeData.length) {
+      renderTableBody(tbody, columnNames, activeData, indices, jobToIndex);
+    } else if (fullData.length > 0) {
+      /* Active empty due to filters: leave tbody blank */
+    } else {
+      var emptyRow = document.createElement('tr');
+      var emptyCell = document.createElement('td');
+      emptyCell.colSpan = 7;
+      emptyCell.className = 'ct-empty-message';
+      emptyCell.textContent = 'No candidate rows in the report. Check that your Ashby report has data and that filters are saved.';
+      emptyRow.appendChild(emptyCell);
+      tbody.appendChild(emptyRow);
+    }
+
+    if (archivedSection) {
+      archivedSection.hidden = false;
+      if (archivedData.length) {
+        renderTableBody(archivedTbody, columnNames, archivedData, indices, jobToIndex);
+      } else {
+        var archivedEmptyRow = document.createElement('tr');
+        var archivedEmptyCell = document.createElement('td');
+        archivedEmptyCell.colSpan = 7;
+        archivedEmptyCell.className = 'ct-empty-message';
+        archivedEmptyCell.textContent = 'No archived candidates.';
+        archivedEmptyRow.appendChild(archivedEmptyCell);
+        archivedTbody.appendChild(archivedEmptyRow);
+      }
+    }
   }
 
   function setMeta(text) {
@@ -422,6 +482,14 @@
 
   function getDisplayVal(row, key, columnNames, indices) {
     return escapeText(getVal(row, key, columnNames, indices)) || '—';
+  }
+
+  function isArchivedRow(row, columnNames, indices) {
+    var status = String(getVal(row, 'status', columnNames, indices) || '').toLowerCase().trim();
+    var stage = String(getVal(row, 'stage', columnNames, indices) || '').toLowerCase().trim();
+    if (/archived/.test(status)) return true;
+    if (/archived|reject|withdraw/.test(stage)) return true;
+    return false;
   }
 
   function populateFilterOptions() {
@@ -524,31 +592,41 @@
       if (f.source.length > 0 && f.source.indexOf(source) === -1) return false;
       return true;
     });
+    var activeRows = filtered.filter(function (row) { return !isArchivedRow(row, fullColumnNames, fullIndices); });
+    var archivedRows = filtered.filter(function (row) { return isArchivedRow(row, fullColumnNames, fullIndices); });
     if (sortBy) {
       var key = sortBy;
       var mult = sortDir;
-      filtered.sort(function (a, b) {
-        var va = getVal(a, key, fullColumnNames, fullIndices);
-        var vb = getVal(b, key, fullColumnNames, fullIndices);
-        if (key === 'statusDate') {
-          var da = formatDate(va);
-          var db = formatDate(vb);
-          if (!da && !db) return 0;
-          if (!da) return 1;
-          if (!db) return -1;
-          return mult * (new Date(va) - new Date(vb));
-        }
-        var sa = String(va || '').toLowerCase();
-        var sb = String(vb || '').toLowerCase();
-        if (sa < sb) return -mult;
-        if (sa > sb) return mult;
-        return 0;
-      });
+      function sortRows(arr) {
+        arr.sort(function (a, b) {
+          var va = getVal(a, key, fullColumnNames, fullIndices);
+          var vb = getVal(b, key, fullColumnNames, fullIndices);
+          if (key === 'statusDate') {
+            var da = formatDate(va);
+            var db = formatDate(vb);
+            if (!da && !db) return 0;
+            if (!da) return 1;
+            if (!db) return -1;
+            return mult * (new Date(va) - new Date(vb));
+          }
+          var sa = String(va || '').toLowerCase();
+          var sb = String(vb || '').toLowerCase();
+          if (sa < sb) return -mult;
+          if (sa > sb) return mult;
+          return 0;
+        });
+      }
+      sortRows(activeRows);
+      sortRows(archivedRows);
     }
-    renderTable(fullColumnNames, filtered, lastRaw && lastRaw._debug, lastRaw, fullJobToIndex);
+    renderTable(fullColumnNames, activeRows, archivedRows, lastRaw && lastRaw._debug, lastRaw, fullJobToIndex);
     updateDropdownLabels();
     var metaEl = document.getElementById('ct-meta');
-    if (metaEl) metaEl.textContent = (metaEl.getAttribute('data-sync-text') || '') + (filtered.length !== fullData.length ? ' · Showing ' + filtered.length + ' of ' + fullData.length : '');
+    if (metaEl) {
+      var metaExtra = filtered.length !== fullData.length ? ' · Showing ' + filtered.length + ' of ' + fullData.length : '';
+      if (activeRows.length !== filtered.length || archivedRows.length > 0) metaExtra += ' · ' + activeRows.length + ' active, ' + archivedRows.length + ' archived';
+      metaEl.textContent = (metaEl.getAttribute('data-sync-text') || '') + metaExtra;
+    }
     var icons = document.querySelectorAll('.ct-sort-icon');
     for (var i = 0; i < icons.length; i++) icons[i].textContent = '';
     var th = sortBy && document.getElementById('ct-th-' + sortBy);
@@ -569,7 +647,10 @@
   }
 
   function hideTable() {
-    document.getElementById('ct-table-wrap').hidden = true;
+    var activeSection = document.getElementById('ct-active-section');
+    var archivedSection = document.getElementById('ct-archived-section');
+    if (activeSection) activeSection.hidden = true;
+    if (archivedSection) archivedSection.hidden = true;
   }
 
   function fetchReport() {

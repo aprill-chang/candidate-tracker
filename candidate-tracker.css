@@ -196,6 +196,21 @@ body.candidate-tracker-page {
   color: var(--ct-accent);
 }
 
+.ct-section {
+  margin-bottom: 2rem;
+}
+
+.ct-section:last-child {
+  margin-bottom: 0;
+}
+
+.ct-section-title {
+  margin: 0 0 0.75rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--ct-text);
+}
+
 .ct-table-wrap {
   overflow-x: auto;
   background: var(--ct-surface);
