@@ -127,6 +127,12 @@
     return key != null ? row[key] : '';
   }
 
+  function hashToIndex(str) {
+    var h = 0;
+    for (var i = 0; i < str.length; i++) h = ((h << 5) - h) + str.charCodeAt(i) | 0;
+    return h < 0 ? -h : h;
+  }
+
   function renderTable(columnNames, data, debug, response) {
     var tbody = document.getElementById('ct-tbody');
     var wrap = document.getElementById('ct-table-wrap');
@@ -168,6 +174,18 @@
       columnNames.every(function (h, i) { return String((Array.isArray(firstRow) ? firstRow[i] : firstRow[h]) || '').trim() === String(h || '').trim(); });
     var rows = isFirstRowHeader ? data.slice(1) : data;
 
+    var jobToIndex = {};
+    var stageToIndex = {};
+    var jobIdx = 0;
+    var stageIdx = 0;
+    for (var r = 0; r < rows.length; r++) {
+      var row = rows[r];
+      var j = escapeText(cellValue(row, indices.job, columnNames)) || '—';
+      var s = escapeText(cellValue(row, indices.stage, columnNames)) || '—';
+      if (jobToIndex[j] === undefined) jobToIndex[j] = jobIdx++;
+      if (stageToIndex[s] === undefined) stageToIndex[s] = stageIdx++;
+    }
+
     for (var r = 0; r < rows.length; r++) {
       var row = rows[r];
       var rowId = buildRowId(row, indices, columnNames, r);
@@ -183,18 +201,22 @@
       tr.appendChild(tdName);
 
       var tdJob = document.createElement('td');
+      tdJob.className = 'ct-tag ct-job-' + (jobToIndex[escapeText(jobVal) || '—'] % 16);
       tdJob.textContent = escapeText(jobVal) || '—';
       tr.appendChild(tdJob);
 
       var tdStage = document.createElement('td');
+      tdStage.className = 'ct-tag ct-stage-' + (stageToIndex[escapeText(stageVal) || '—'] % 16);
       tdStage.textContent = escapeText(stageVal) || '—';
       tr.appendChild(tdStage);
 
       var statusVal = cellValue(row, indices.status, columnNames);
       var statusDateVal = cellValue(row, indices.statusDate, columnNames);
       var sourceVal = cellValue(row, indices.source, columnNames);
+      var statusKey = escapeText(statusVal) || '—';
       var tdStatus = document.createElement('td');
-      tdStatus.textContent = escapeText(statusVal) || '—';
+      tdStatus.className = 'ct-tag ct-status-' + (hashToIndex(statusKey) % 16);
+      tdStatus.textContent = statusKey;
       tr.appendChild(tdStatus);
       var tdStatusDate = document.createElement('td');
       var statusDateFormatted = formatDate(statusDateVal);
