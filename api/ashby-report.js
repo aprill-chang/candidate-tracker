@@ -11,6 +11,8 @@ module.exports = async function handler(req, res) {
   }
 
   const apiKey = process.env.ASHBY_API_KEY;
+  // Debug: safe header so you can confirm if the server sees the env var (DevTools → Network → api/ashby-report → Headers)
+  res.setHeader('X-Ashby-Key-Configured', apiKey && apiKey.length > 0 ? 'true' : 'false');
   if (!apiKey) {
     return res.status(500).json({
       error: 'Ashby API key not configured',
