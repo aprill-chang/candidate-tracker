@@ -413,7 +413,7 @@
     var prevBtn = document.createElement('button');
     prevBtn.type = 'button';
     prevBtn.className = 'ct-calendar-nav-btn';
-    prevBtn.textContent = '←';
+    prevBtn.textContent = '← Prev';
     prevBtn.setAttribute('aria-label', 'Previous months');
     prevBtn.addEventListener('click', function () {
       monthStart = new Date(monthStart.getFullYear(), monthStart.getMonth() - 1, 1);
@@ -422,7 +422,7 @@
     var nextBtn = document.createElement('button');
     nextBtn.type = 'button';
     nextBtn.className = 'ct-calendar-nav-btn';
-    nextBtn.textContent = '→';
+    nextBtn.textContent = 'Next →';
     nextBtn.setAttribute('aria-label', 'Next months');
     nextBtn.addEventListener('click', function () {
       monthStart = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 1);
