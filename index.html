@@ -54,7 +54,7 @@
                   <option value="next-week">Next week</option>
                   <option value="range">Select date range</option>
                 </select>
-                <div id="ct-status-date-range-wrap" class="ct-status-date-range-wrap" hidden>
+                <div id="ct-status-date-range-wrap" class="ct-status-date-range-wrap" aria-hidden="true">
                   <label class="ct-date-range-label"><span>From</span> <input type="date" id="ct-status-date-from" class="ct-filter-input-date" aria-label="Status date from"></label>
                   <label class="ct-date-range-label"><span>To</span> <input type="date" id="ct-status-date-to" class="ct-filter-input-date" aria-label="Status date to"></label>
                 </div>
@@ -808,9 +808,14 @@
         var statusDateSel = document.getElementById('ct-filter-status-date');
         var rangeWrap = document.getElementById('ct-status-date-range-wrap');
         if (statusDateSel && rangeWrap) {
-          rangeWrap.hidden = statusDateSel.value !== 'range';
+          function syncDateRangeVisible() {
+            var show = statusDateSel.value === 'range';
+            rangeWrap.classList.toggle('ct-status-date-range-visible', show);
+            rangeWrap.setAttribute('aria-hidden', show ? 'false' : 'true');
+          }
+          syncDateRangeVisible();
           statusDateSel.onchange = function () {
-            rangeWrap.hidden = this.value !== 'range';
+            syncDateRangeVisible();
             applyFilterAndSort(raw);
           };
         }

@@ -201,11 +201,15 @@ body.candidate-tracker-page {
 }
 
 .ct-status-date-range-wrap {
-  display: flex;
+  display: none;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
   margin-top: 0.35rem;
+}
+
+.ct-status-date-range-wrap.ct-status-date-range-visible {
+  display: flex;
 }
 
 .ct-filter-cell .ct-status-date-range-wrap {
