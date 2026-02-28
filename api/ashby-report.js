@@ -1,8 +1,9 @@
 /**
  * Vercel serverless function: fetch Ashby report data.
  * Keeps ASHBY_API_KEY server-side. Requires Reports – Read permission.
+ * Report ID = UUID from your report URL after "saved-v0/" (optional: set ASHBY_REPORT_ID in Vercel).
  */
-const REPORT_ID = 'c3ad3c95-3463-4710-a7f0-351d9a2004c2';
+const DEFAULT_REPORT_ID = 'c3ad3c95-3463-4710-a7f0-351d9a2004c2';
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -20,6 +21,7 @@ module.exports = async function handler(req, res) {
     });
   }
 
+  const reportId = process.env.ASHBY_REPORT_ID || DEFAULT_REPORT_ID;
   const authHeader =
     'Basic ' + Buffer.from(apiKey + ':', 'utf8').toString('base64');
 
@@ -32,7 +34,7 @@ module.exports = async function handler(req, res) {
         Authorization: authHeader,
       },
       body: JSON.stringify({
-        reportId: REPORT_ID,
+        reportId: reportId,
         includeHeadersInData: true,
       }),
     });
@@ -54,8 +56,26 @@ module.exports = async function handler(req, res) {
       });
     }
 
+    // Unwrap if Ashby nests under results or similar
+    const resolved = data.results && typeof data.results === 'object'
+      ? data.results
+      : data;
+    const dataArray = resolved.data || resolved.rows || data.data || data.rows || [];
+    const columns = resolved.columnNames || resolved.columnNamesList || data.columnNames || data.columnNamesList || [];
+
+    const payload = {
+      columnNames: columns,
+      data: dataArray,
+      _debug: {
+        topLevelKeys: Object.keys(data),
+        dataLength: Array.isArray(dataArray) ? dataArray.length : 0,
+        columnNamesLength: Array.isArray(columns) ? columns.length : 0,
+        firstRowType: Array.isArray(dataArray) && dataArray[0] != null ? typeof dataArray[0] : null,
+        firstRowKeys: Array.isArray(dataArray) && dataArray[0] && typeof dataArray[0] === 'object' && !Array.isArray(dataArray[0]) ? Object.keys(dataArray[0]) : null,
+      },
+    };
     res.setHeader('Cache-Control', 'private, max-age=0');
-    return res.status(200).json(data);
+    return res.status(200).json(payload);
   } catch (err) {
     console.error('Ashby report fetch error:', err.message);
     return res.status(500).json({

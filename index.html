@@ -40,7 +40,7 @@
 
   var possibleNames = ['candidate', 'name', 'full name', 'candidate name'];
   var possibleJobs = ['job', 'opening', 'position', 'role', 'title'];
-  var possibleStages = ['stage', 'interview stage', 'current stage', 'current interview stage'];
+  var possibleStages = ['stage', 'interview stage', 'current stage', 'current interview stage', 'furthest stage group reached'];
   var possibleDates = ['interview date', 'next interview', 'date', 'scheduled', 'current interview date', 'next interview date'];
 
   function findColumnIndex(columnNames, possible) {
@@ -59,9 +59,12 @@
     var lower = columnNames.map(function (c) { return (c || '').toLowerCase().trim(); });
     if (lower.indexOf('id') !== -1) idCol = lower.indexOf('id');
     else if (lower.indexOf('candidate id') !== -1) idCol = lower.indexOf('candidate id');
-    if (idCol >= 0 && row[idCol]) return String(row[idCol]).trim();
-    var name = indices.name >= 0 ? String(row[indices.name] || '').trim() : '';
-    var job = indices.job >= 0 ? String(row[indices.job] || '').trim() : '';
+    if (idCol >= 0) {
+      var idVal = cellValue(row, idCol, columnNames);
+      if (idVal) return String(idVal).trim();
+    }
+    var name = indices.name >= 0 ? String(cellValue(row, indices.name, columnNames) || '').trim() : '';
+    var job = indices.job >= 0 ? String(cellValue(row, indices.job, columnNames) || '').trim() : '';
     return (name + '|' + job) || 'row-' + rowIndex;
   }
 
@@ -97,13 +100,31 @@
     return String(str == null ? '' : str).trim();
   }
 
-  function renderTable(columnNames, data) {
+  function cellValue(row, colIndex, columnNames) {
+    if (colIndex < 0) return '';
+    if (Array.isArray(row)) return row[colIndex];
+    var key = columnNames[colIndex];
+    return key != null ? row[key] : '';
+  }
+
+  function renderTable(columnNames, data, debug) {
     var tbody = document.getElementById('ct-tbody');
     var wrap = document.getElementById('ct-table-wrap');
     tbody.textContent = '';
 
     if (!columnNames.length || !data.length) {
       wrap.hidden = false;
+      var emptyRow = document.createElement('tr');
+      var emptyCell = document.createElement('td');
+      emptyCell.colSpan = 5;
+      emptyCell.className = 'ct-empty-message';
+      var msg = 'No candidate rows in the report. Check that your Ashby report has data and that filters are saved.';
+      if (debug) {
+        msg += ' [Debug: ' + JSON.stringify(debug) + ']';
+      }
+      emptyCell.textContent = msg;
+      emptyRow.appendChild(emptyCell);
+      tbody.appendChild(emptyRow);
       return;
     }
 
@@ -116,16 +137,16 @@
 
     var firstRow = data[0];
     var isFirstRowHeader = firstRow && columnNames.length === firstRow.length &&
-      columnNames.every(function (h, i) { return String(firstRow[i] || '').trim() === String(h || '').trim(); });
+      columnNames.every(function (h, i) { return String((Array.isArray(firstRow) ? firstRow[i] : firstRow[h]) || '').trim() === String(h || '').trim(); });
     var rows = isFirstRowHeader ? data.slice(1) : data;
 
     for (var r = 0; r < rows.length; r++) {
       var row = rows[r];
       var rowId = buildRowId(row, indices, columnNames, r);
-      var nameVal = indices.name >= 0 ? row[indices.name] : '';
-      var jobVal = indices.job >= 0 ? row[indices.job] : '';
-      var stageVal = indices.stage >= 0 ? row[indices.stage] : '';
-      var dateVal = indices.date >= 0 ? row[indices.date] : '';
+      var nameVal = cellValue(row, indices.name, columnNames);
+      var jobVal = cellValue(row, indices.job, columnNames);
+      var stageVal = cellValue(row, indices.stage, columnNames);
+      var dateVal = cellValue(row, indices.date, columnNames);
       var isScheduling = !formatDate(dateVal);
       var noteVal = getStoredNote(rowId);
 
@@ -215,14 +236,16 @@
           setError(msg);
           return;
         }
-        var columnNames = result.data.columnNames || [];
-        var data = result.data.data || [];
+        var raw = result.data;
+        var resolved = raw.results && typeof raw.results === 'object' ? raw.results : raw;
+        var columnNames = resolved.columnNames || resolved.columnNamesList || raw.columnNames || raw.columnNamesList || [];
+        var data = resolved.data || resolved.rows || raw.data || raw.rows || [];
         if (Array.isArray(data[0]) && data[0].length && !columnNames.length && typeof data[0][0] === 'string') {
           columnNames = data[0];
           data = data.slice(1);
         }
-        renderTable(columnNames, data);
-        setMeta('Last synced ' + new Date().toLocaleString());
+        renderTable(columnNames, data, raw._debug);
+        setMeta('Last synced ' + new Date().toLocaleString() + (data.length ? ' · ' + data.length + ' row(s)' : ''));
       })
       .catch(function (err) {
         setLoading(false);

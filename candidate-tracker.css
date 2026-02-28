@@ -153,6 +153,13 @@ body.candidate-tracker-page {
   font-style: italic;
 }
 
+.ct-table .ct-empty-message {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--ct-text-muted);
+  font-size: 0.875rem;
+}
+
 @media (max-width: 640px) {
   .ct-wrap {
     padding: 1rem;
