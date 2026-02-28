@@ -84,6 +84,13 @@ body.candidate-tracker-page {
   color: #b91c1c;
 }
 
+.ct-column-hint {
+  margin: 0 0 0.75rem;
+  font-size: 0.75rem;
+  color: var(--ct-text-muted);
+  line-height: 1.4;
+}
+
 .ct-table-wrap {
   overflow-x: auto;
   background: var(--ct-surface);

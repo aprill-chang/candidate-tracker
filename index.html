@@ -16,6 +16,7 @@
 
     <div id="ct-loading" class="ct-loading" hidden>Loading report…</div>
     <div id="ct-error" class="ct-error" hidden></div>
+    <p id="ct-column-hint" class="ct-column-hint" hidden aria-live="polite"></p>
     <div class="ct-table-wrap" id="ct-table-wrap" hidden>
       <table class="ct-table" id="ct-table" role="grid">
         <thead>
@@ -44,7 +45,7 @@
   var possibleJobs = ['job', 'opening', 'position', 'role', 'title', 'job title'];
   var possibleStages = ['stage', 'interview stage', 'current stage', 'current interview stage', 'furthest stage group reached'];
   var possibleStatus = ['status', 'application status', 'stage', 'state'];
-  var possibleStatusDate = ['status date', 'status changed', 'interview date', 'next interview', 'next interview date', 'scheduled', 'interview scheduled', 'scheduled date', 'current interview date', 'upcoming interview', 'last updated', 'updated at', 'date'];
+  var possibleStatusDate = ['activity status due at', 'status date', 'status changed', 'interview date', 'next interview date', 'next interview', 'scheduled date', 'scheduled at', 'scheduled for', 'interview scheduled', 'scheduled', 'current interview date', 'upcoming interview', 'last updated', 'updated at', 'updated', 'stage change date', 'stage changed', 'last activity', 'date scheduled', 'date'];
   var possibleSource = ['source', 'credited to', 'referral', 'sourcing source'];
 
   function findColumnIndex(columnNames, possible, excludeIndices) {
@@ -55,6 +56,19 @@
       for (var j = 0; j < lower.length; j++) {
         if (exclude.indexOf(j) !== -1) continue;
         if (lower[j].indexOf(p) !== -1 || p.indexOf(lower[j]) !== -1) return j;
+      }
+    }
+    return -1;
+  }
+
+  function findFirstDateLikeColumn(columnNames, excludeIndices) {
+    var exclude = excludeIndices || [];
+    var dateLike = ['date', 'scheduled', 'time', 'updated', 'changed', 'at'];
+    for (var j = 0; j < columnNames.length; j++) {
+      if (exclude.indexOf(j) !== -1) continue;
+      var lower = (columnNames[j] || '').toLowerCase();
+      for (var d = 0; d < dateLike.length; d++) {
+        if (lower.indexOf(dateLike[d]) !== -1) return j;
       }
     }
     return -1;
@@ -144,6 +158,9 @@
     indices.stage = findColumnIndex(columnNames, possibleStages, [indices.name, indices.job]);
     indices.status = findColumnIndex(columnNames, possibleStatus, [indices.name, indices.job, indices.stage]);
     indices.statusDate = findColumnIndex(columnNames, possibleStatusDate, [indices.name, indices.job, indices.stage, indices.status]);
+    if (indices.statusDate < 0) {
+      indices.statusDate = findFirstDateLikeColumn(columnNames, [indices.name, indices.job, indices.stage, indices.status]);
+    }
     indices.source = findColumnIndex(columnNames, possibleSource, [indices.name, indices.job, indices.stage, indices.status, indices.statusDate]);
 
     var firstRow = data[0];
@@ -260,6 +277,11 @@
         }
         renderTable(columnNames, data, raw._debug, raw);
         setMeta('Last synced ' + new Date().toLocaleString() + (data.length ? ' · ' + data.length + ' row(s)' : ''));
+        var hintEl = document.getElementById('ct-column-hint');
+        if (hintEl && columnNames.length) {
+          hintEl.hidden = false;
+          hintEl.textContent = 'Report columns: ' + columnNames.join(', ') + '. Status date maps to the first matching date column.';
+        }
       })
       .catch(function (err) {
         setLoading(false);
