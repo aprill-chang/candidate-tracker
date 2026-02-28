@@ -181,6 +181,40 @@ body.candidate-tracker-page {
   cursor: pointer;
 }
 
+.ct-filter-status-date {
+  min-width: 160px;
+}
+
+.ct-status-date-range-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+
+.ct-date-range-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8125rem;
+  color: var(--ct-text);
+}
+
+.ct-date-range-label span {
+  white-space: nowrap;
+}
+
+.ct-filter-input-date {
+  padding: 0.35rem 0.5rem;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  color: var(--ct-text);
+  background: var(--ct-surface);
+  border: 1px solid var(--ct-border);
+  border-radius: 6px;
+}
+
 .ct-sortable {
   cursor: pointer;
   user-select: none;

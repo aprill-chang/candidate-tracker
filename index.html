@@ -47,6 +47,21 @@
           <div class="ct-dropdown-panel" id="ct-panel-source" role="listbox" aria-label="Source options" hidden></div>
         </div>
       </div>
+      <div class="ct-filter-dropdown-wrap">
+        <span class="ct-filter-label">Status date</span>
+        <select id="ct-filter-status-date" class="ct-filter-select ct-filter-status-date" aria-label="Filter by status date">
+          <option value="">All</option>
+          <option value="past-due">Past due</option>
+          <option value="last-week">Last week</option>
+          <option value="this-week">This week</option>
+          <option value="next-week">Next week</option>
+          <option value="range">Select time range</option>
+        </select>
+        <div id="ct-status-date-range-wrap" class="ct-status-date-range-wrap" hidden>
+          <label class="ct-date-range-label"><span>From</span> <input type="date" id="ct-status-date-from" class="ct-filter-input-date" aria-label="Status date from"></label>
+          <label class="ct-date-range-label"><span>To</span> <input type="date" id="ct-status-date-to" class="ct-filter-input-date" aria-label="Status date to"></label>
+        </div>
+      </div>
     </div>
     <section class="ct-section" id="ct-active-section" hidden>
       <h2 class="ct-section-title">Active candidates</h2>
@@ -524,12 +539,54 @@
       for (var i = 0; i < boxes.length; i++) out.push(boxes[i].value);
       return out;
     }
+    var statusDateSel = document.getElementById('ct-filter-status-date');
+    var statusDateVal = statusDateSel ? statusDateSel.value : '';
+    var fromInput = document.getElementById('ct-status-date-from');
+    var toInput = document.getElementById('ct-status-date-to');
     return {
       job: selectedFromPanel('ct-panel-job'),
       stage: selectedFromPanel('ct-panel-stage'),
       status: selectedFromPanel('ct-panel-status'),
-      source: selectedFromPanel('ct-panel-source')
+      source: selectedFromPanel('ct-panel-source'),
+      statusDate: statusDateVal,
+      statusDateFrom: fromInput ? fromInput.value : '',
+      statusDateTo: toInput ? toInput.value : ''
     };
+  }
+
+  function getStartOfWeek(d) {
+    var date = new Date(d);
+    date.setHours(0, 0, 0, 0);
+    var day = date.getDay();
+    var diff = day === 0 ? -6 : 1 - day;
+    date.setDate(date.getDate() + diff);
+    return date.getTime();
+  }
+
+  function statusDateMatchesFilter(rowDateMs, filterValue, fromStr, toStr) {
+    if (!filterValue) return true;
+    if (rowDateMs == null || isNaN(rowDateMs)) return false;
+    var today = new Date();
+    today.setHours(0, 0, 0, 0);
+    var todayMs = today.getTime();
+    var weekStart = getStartOfWeek(today);
+    var oneDay = 24 * 60 * 60 * 1000;
+    if (filterValue === 'past-due') return rowDateMs < todayMs;
+    if (filterValue === 'last-week') {
+      var lastWeekStart = weekStart - 7 * oneDay;
+      return rowDateMs >= lastWeekStart && rowDateMs < weekStart;
+    }
+    if (filterValue === 'this-week') return rowDateMs >= weekStart && rowDateMs < weekStart + 7 * oneDay;
+    if (filterValue === 'next-week') {
+      var nextWeekStart = weekStart + 7 * oneDay;
+      return rowDateMs >= nextWeekStart && rowDateMs < nextWeekStart + 7 * oneDay;
+    }
+    if (filterValue === 'range' && fromStr && toStr) {
+      var fromMs = new Date(fromStr).setHours(0, 0, 0, 0);
+      var toMs = new Date(toStr).setHours(23, 59, 59, 999);
+      return rowDateMs >= fromMs && rowDateMs <= toMs;
+    }
+    return false;
   }
 
   function updateDropdownLabels() {
@@ -590,6 +647,9 @@
       if (f.stage.length > 0 && f.stage.indexOf(stage) === -1) return false;
       if (f.status.length > 0 && f.status.indexOf(status) === -1) return false;
       if (f.source.length > 0 && f.source.indexOf(source) === -1) return false;
+      var statusDateVal = getVal(row, 'statusDate', fullColumnNames, fullIndices);
+      var statusDateMs = statusDateVal ? new Date(statusDateVal).getTime() : null;
+      if (!statusDateMatchesFilter(statusDateMs, f.statusDate, f.statusDateFrom, f.statusDateTo)) return false;
       return true;
     });
     var activeRows = filtered.filter(function (row) { return !isArchivedRow(row, fullColumnNames, fullIndices); });
@@ -746,6 +806,18 @@
           populateFilterOptions();
           ['job', 'stage', 'status', 'source'].forEach(function (k) { setupDropdown(k, raw); });
           document.addEventListener('click', closeAllDropdowns);
+          var statusDateSel = document.getElementById('ct-filter-status-date');
+          var rangeWrap = document.getElementById('ct-status-date-range-wrap');
+          if (statusDateSel && rangeWrap) {
+            statusDateSel.onchange = function () {
+              rangeWrap.hidden = this.value !== 'range';
+              applyFilterAndSort(raw);
+            };
+          }
+          var dateFrom = document.getElementById('ct-status-date-from');
+          var dateTo = document.getElementById('ct-status-date-to');
+          if (dateFrom) dateFrom.onchange = function () { applyFilterAndSort(raw); };
+          if (dateTo) dateTo.onchange = function () { applyFilterAndSort(raw); };
         }
         document.querySelectorAll('.ct-sortable').forEach(function (th) {
           th.addEventListener('click', function () {
