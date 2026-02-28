@@ -91,17 +91,30 @@ body.candidate-tracker-page {
   line-height: 1.4;
 }
 
-.ct-filters {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  gap: 1rem;
-  margin-bottom: 1rem;
+.ct-filter-row {
+  background: var(--ct-header-bg);
+  border-bottom: 1px solid var(--ct-border);
+}
+
+.ct-filter-cell {
+  padding: 0.5rem 1rem;
+  vertical-align: top;
+  border-bottom: 1px solid var(--ct-border);
+}
+
+.ct-filter-cell .ct-dropdown,
+.ct-filter-cell .ct-filter-select {
+  width: 100%;
+  max-width: 100%;
+}
+
+.ct-filter-cell .ct-dropdown-trigger {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .ct-filter-hint {
-  width: 100%;
-  margin: 0 0 0.25rem;
   font-size: 0.75rem;
   color: var(--ct-text-muted);
 }
@@ -182,7 +195,9 @@ body.candidate-tracker-page {
 }
 
 .ct-filter-status-date {
-  min-width: 160px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .ct-status-date-range-wrap {
@@ -191,6 +206,10 @@ body.candidate-tracker-page {
   align-items: center;
   gap: 0.5rem;
   margin-top: 0.35rem;
+}
+
+.ct-filter-cell .ct-status-date-range-wrap {
+  margin-top: 0.25rem;
 }
 
 .ct-date-range-label {

@@ -17,57 +17,53 @@
     <div id="ct-loading" class="ct-loading" hidden>Loading report…</div>
     <div id="ct-error" class="ct-error" hidden></div>
     <p id="ct-column-hint" class="ct-column-hint" hidden aria-live="polite"></p>
-    <div id="ct-filters" class="ct-filters" hidden>
-      <p class="ct-filter-hint">Select one or more options per filter. Empty = show all.</p>
-      <div class="ct-filter-dropdown-wrap">
-        <span class="ct-filter-label">Job</span>
-        <div class="ct-dropdown" id="ct-dropdown-job">
-          <button type="button" class="ct-dropdown-trigger" id="ct-trigger-job" aria-haspopup="listbox" aria-expanded="false" aria-label="Filter by job">All jobs</button>
-          <div class="ct-dropdown-panel" id="ct-panel-job" role="listbox" aria-label="Job options" hidden></div>
-        </div>
-      </div>
-      <div class="ct-filter-dropdown-wrap">
-        <span class="ct-filter-label">Stage</span>
-        <div class="ct-dropdown" id="ct-dropdown-stage">
-          <button type="button" class="ct-dropdown-trigger" id="ct-trigger-stage" aria-haspopup="listbox" aria-expanded="false" aria-label="Filter by stage">All stages</button>
-          <div class="ct-dropdown-panel" id="ct-panel-stage" role="listbox" aria-label="Stage options" hidden></div>
-        </div>
-      </div>
-      <div class="ct-filter-dropdown-wrap">
-        <span class="ct-filter-label">Status</span>
-        <div class="ct-dropdown" id="ct-dropdown-status">
-          <button type="button" class="ct-dropdown-trigger" id="ct-trigger-status" aria-haspopup="listbox" aria-expanded="false" aria-label="Filter by status">All statuses</button>
-          <div class="ct-dropdown-panel" id="ct-panel-status" role="listbox" aria-label="Status options" hidden></div>
-        </div>
-      </div>
-      <div class="ct-filter-dropdown-wrap">
-        <span class="ct-filter-label">Source</span>
-        <div class="ct-dropdown" id="ct-dropdown-source">
-          <button type="button" class="ct-dropdown-trigger" id="ct-trigger-source" aria-haspopup="listbox" aria-expanded="false" aria-label="Filter by source">All sources</button>
-          <div class="ct-dropdown-panel" id="ct-panel-source" role="listbox" aria-label="Source options" hidden></div>
-        </div>
-      </div>
-      <div class="ct-filter-dropdown-wrap">
-        <span class="ct-filter-label">Status date</span>
-        <select id="ct-filter-status-date" class="ct-filter-select ct-filter-status-date" aria-label="Filter by status date">
-          <option value="">All</option>
-          <option value="past-due">Past due</option>
-          <option value="last-week">Last week</option>
-          <option value="this-week">This week</option>
-          <option value="next-week">Next week</option>
-          <option value="range">Select time range</option>
-        </select>
-        <div id="ct-status-date-range-wrap" class="ct-status-date-range-wrap" hidden>
-          <label class="ct-date-range-label"><span>From</span> <input type="date" id="ct-status-date-from" class="ct-filter-input-date" aria-label="Status date from"></label>
-          <label class="ct-date-range-label"><span>To</span> <input type="date" id="ct-status-date-to" class="ct-filter-input-date" aria-label="Status date to"></label>
-        </div>
-      </div>
-    </div>
     <section class="ct-section" id="ct-active-section" hidden>
       <h2 class="ct-section-title">Active candidates</h2>
       <div class="ct-table-wrap" id="ct-table-wrap">
         <table class="ct-table" id="ct-table" role="grid">
           <thead>
+            <tr class="ct-filter-row">
+              <td class="ct-filter-cell"><span class="ct-filter-hint">Filters: multi-select = show all if empty.</span></td>
+              <td class="ct-filter-cell">
+                <div class="ct-dropdown" id="ct-dropdown-job">
+                  <button type="button" class="ct-dropdown-trigger" id="ct-trigger-job" aria-haspopup="listbox" aria-expanded="false" aria-label="Filter by job">All jobs</button>
+                  <div class="ct-dropdown-panel" id="ct-panel-job" role="listbox" aria-label="Job options" hidden></div>
+                </div>
+              </td>
+              <td class="ct-filter-cell">
+                <div class="ct-dropdown" id="ct-dropdown-stage">
+                  <button type="button" class="ct-dropdown-trigger" id="ct-trigger-stage" aria-haspopup="listbox" aria-expanded="false" aria-label="Filter by stage">All stages</button>
+                  <div class="ct-dropdown-panel" id="ct-panel-stage" role="listbox" aria-label="Stage options" hidden></div>
+                </div>
+              </td>
+              <td class="ct-filter-cell">
+                <div class="ct-dropdown" id="ct-dropdown-status">
+                  <button type="button" class="ct-dropdown-trigger" id="ct-trigger-status" aria-haspopup="listbox" aria-expanded="false" aria-label="Filter by status">All statuses</button>
+                  <div class="ct-dropdown-panel" id="ct-panel-status" role="listbox" aria-label="Status options" hidden></div>
+                </div>
+              </td>
+              <td class="ct-filter-cell">
+                <select id="ct-filter-status-date" class="ct-filter-select ct-filter-status-date" aria-label="Filter by status date">
+                  <option value="">All</option>
+                  <option value="past-due">Past due</option>
+                  <option value="last-week">Last week</option>
+                  <option value="this-week">This week</option>
+                  <option value="next-week">Next week</option>
+                  <option value="range">Select time range</option>
+                </select>
+                <div id="ct-status-date-range-wrap" class="ct-status-date-range-wrap" hidden>
+                  <label class="ct-date-range-label"><span>From</span> <input type="date" id="ct-status-date-from" class="ct-filter-input-date" aria-label="Status date from"></label>
+                  <label class="ct-date-range-label"><span>To</span> <input type="date" id="ct-status-date-to" class="ct-filter-input-date" aria-label="Status date to"></label>
+                </div>
+              </td>
+              <td class="ct-filter-cell">
+                <div class="ct-dropdown" id="ct-dropdown-source">
+                  <button type="button" class="ct-dropdown-trigger" id="ct-trigger-source" aria-haspopup="listbox" aria-expanded="false" aria-label="Filter by source">All sources</button>
+                  <div class="ct-dropdown-panel" id="ct-panel-source" role="listbox" aria-label="Source options" hidden></div>
+                </div>
+              </td>
+              <td class="ct-filter-cell"></td>
+            </tr>
             <tr>
               <th scope="col" class="ct-sortable" data-sort="name" id="ct-th-name">Candidate name <span class="ct-sort-icon" aria-hidden="true"></span></th>
               <th scope="col" class="ct-sortable" data-sort="job" id="ct-th-job">Candidate job <span class="ct-sort-icon" aria-hidden="true"></span></th>
@@ -800,25 +796,24 @@
           hintEl.textContent = 'Report columns: ' + columnNames.join(', ') + '. Status date maps to the first matching date column.' + linkHint;
         }
 
-        var filtersEl = document.getElementById('ct-filters');
-        if (filtersEl) {
-          filtersEl.hidden = false;
-          populateFilterOptions();
-          ['job', 'stage', 'status', 'source'].forEach(function (k) { setupDropdown(k, raw); });
+        populateFilterOptions();
+        ['job', 'stage', 'status', 'source'].forEach(function (k) { setupDropdown(k, raw); });
+        if (!window._ctFiltersClickSetup) {
+          window._ctFiltersClickSetup = true;
           document.addEventListener('click', closeAllDropdowns);
-          var statusDateSel = document.getElementById('ct-filter-status-date');
-          var rangeWrap = document.getElementById('ct-status-date-range-wrap');
-          if (statusDateSel && rangeWrap) {
-            statusDateSel.onchange = function () {
-              rangeWrap.hidden = this.value !== 'range';
-              applyFilterAndSort(raw);
-            };
-          }
-          var dateFrom = document.getElementById('ct-status-date-from');
-          var dateTo = document.getElementById('ct-status-date-to');
-          if (dateFrom) dateFrom.onchange = function () { applyFilterAndSort(raw); };
-          if (dateTo) dateTo.onchange = function () { applyFilterAndSort(raw); };
         }
+        var statusDateSel = document.getElementById('ct-filter-status-date');
+        var rangeWrap = document.getElementById('ct-status-date-range-wrap');
+        if (statusDateSel && rangeWrap) {
+          statusDateSel.onchange = function () {
+            rangeWrap.hidden = this.value !== 'range';
+            applyFilterAndSort(raw);
+          };
+        }
+        var dateFrom = document.getElementById('ct-status-date-from');
+        var dateTo = document.getElementById('ct-status-date-to');
+        if (dateFrom) dateFrom.onchange = function () { applyFilterAndSort(raw); };
+        if (dateTo) dateTo.onchange = function () { applyFilterAndSort(raw); };
         document.querySelectorAll('.ct-sortable').forEach(function (th) {
           th.addEventListener('click', function () {
             var key = th.getAttribute('data-sort');
