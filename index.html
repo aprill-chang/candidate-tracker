@@ -24,6 +24,9 @@
             <th scope="col">Candidate job</th>
             <th scope="col">Current interview stage</th>
             <th scope="col">Current interview date</th>
+            <th scope="col">Status</th>
+            <th scope="col">Status date</th>
+            <th scope="col">Source</th>
             <th scope="col">Note</th>
           </tr>
         </thead>
@@ -39,15 +42,20 @@
   var LOCALSTORAGE_PREFIX = 'candidate-tracker-note-';
 
   var possibleNames = ['candidate', 'name', 'full name', 'candidate name'];
-  var possibleJobs = ['job', 'opening', 'position', 'role', 'title'];
+  var possibleJobs = ['job', 'opening', 'position', 'role', 'title', 'job title'];
   var possibleStages = ['stage', 'interview stage', 'current stage', 'current interview stage', 'furthest stage group reached'];
-  var possibleDates = ['interview date', 'next interview', 'date', 'scheduled', 'current interview date', 'next interview date'];
+  var possibleDates = ['interview date', 'next interview', 'date', 'scheduled', 'current interview date', 'next interview date', 'interview scheduled', 'scheduled date', 'next interview date', 'upcoming interview'];
+  var possibleStatus = ['status', 'application status', 'stage', 'state'];
+  var possibleStatusDate = ['status date', 'status changed', 'date', 'last updated', 'updated at'];
+  var possibleSource = ['source', 'credited to', 'referral', 'sourcing source'];
 
-  function findColumnIndex(columnNames, possible) {
+  function findColumnIndex(columnNames, possible, excludeIndices) {
+    var exclude = excludeIndices || [];
     var lower = columnNames.map(function (c) { return (c || '').toLowerCase().trim(); });
     for (var i = 0; i < possible.length; i++) {
       var p = possible[i];
       for (var j = 0; j < lower.length; j++) {
+        if (exclude.indexOf(j) !== -1) continue;
         if (lower[j].indexOf(p) !== -1 || p.indexOf(lower[j]) !== -1) return j;
       }
     }
@@ -116,7 +124,7 @@
       wrap.hidden = false;
       var emptyRow = document.createElement('tr');
       var emptyCell = document.createElement('td');
-      emptyCell.colSpan = 5;
+      emptyCell.colSpan = 8;
       emptyCell.className = 'ct-empty-message';
       var msg = 'No candidate rows in the report. Check that your Ashby report has data and that filters are saved.';
       var status = response && response._status;
@@ -132,12 +140,14 @@
       return;
     }
 
-    var indices = {
-      name: findColumnIndex(columnNames, possibleNames),
-      job: findColumnIndex(columnNames, possibleJobs),
-      stage: findColumnIndex(columnNames, possibleStages),
-      date: findColumnIndex(columnNames, possibleDates)
-    };
+    var indices = {};
+    indices.name = findColumnIndex(columnNames, possibleNames);
+    indices.job = findColumnIndex(columnNames, possibleJobs, [indices.name]);
+    indices.stage = findColumnIndex(columnNames, possibleStages, [indices.name, indices.job]);
+    indices.date = findColumnIndex(columnNames, possibleDates, [indices.name, indices.job, indices.stage]);
+    indices.status = findColumnIndex(columnNames, possibleStatus, [indices.name, indices.job, indices.stage, indices.date]);
+    indices.statusDate = findColumnIndex(columnNames, possibleStatusDate, [indices.name, indices.job, indices.stage, indices.date, indices.status]);
+    indices.source = findColumnIndex(columnNames, possibleSource, [indices.name, indices.job, indices.stage, indices.date, indices.status, indices.statusDate]);
 
     var firstRow = data[0];
     var isFirstRowHeader = firstRow && columnNames.length === firstRow.length &&
@@ -176,6 +186,20 @@
         tdDate.textContent = displayDate(dateVal);
       }
       tr.appendChild(tdDate);
+
+      var statusVal = cellValue(row, indices.status, columnNames);
+      var statusDateVal = cellValue(row, indices.statusDate, columnNames);
+      var sourceVal = cellValue(row, indices.source, columnNames);
+      var tdStatus = document.createElement('td');
+      tdStatus.textContent = escapeText(statusVal) || '—';
+      tr.appendChild(tdStatus);
+      var tdStatusDate = document.createElement('td');
+      var statusDateFormatted = formatDate(statusDateVal);
+      tdStatusDate.textContent = statusDateFormatted ? statusDateFormatted : (escapeText(statusDateVal) || '—');
+      tr.appendChild(tdStatusDate);
+      var tdSource = document.createElement('td');
+      tdSource.textContent = escapeText(sourceVal) || '—';
+      tr.appendChild(tdSource);
 
       var tdNote = document.createElement('td');
       tdNote.className = 'ct-note-cell';
