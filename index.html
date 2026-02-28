@@ -133,6 +133,32 @@
     return h < 0 ? -h : h;
   }
 
+  function stageEmoji(stage) {
+    var s = (stage || '').toLowerCase();
+    if (/intro|phone|screen/.test(s)) return '👋';
+    if (/first|1st|round 1/.test(s)) return '1️⃣';
+    if (/second|2nd|round 2/.test(s)) return '2️⃣';
+    if (/onsite|on-site|final/.test(s)) return '🏢';
+    if (/reference/.test(s)) return '📝';
+    if (/offer/.test(s)) return '📋';
+    if (/hired/.test(s)) return '✅';
+    if (/reject|archive|withdraw/.test(s)) return '❌';
+    return '📍';
+  }
+
+  function statusEmoji(status) {
+    var s = (status || '').toLowerCase();
+    if (/archived/.test(s)) return '📦';
+    if (/waiting on feedback|feedback/.test(s)) return '⏳';
+    if (/needs scheduling|scheduling/.test(s)) return '📅';
+    if (/waiting on submission|submission/.test(s)) return '📄';
+    if (/needs decision|decision/.test(s)) return '🤔';
+    if (/active|in progress/.test(s)) return '🔄';
+    if (/offer|pending offer/.test(s)) return '📋';
+    if (/hired|closed/.test(s)) return '✅';
+    return '•';
+  }
+
   function renderTable(columnNames, data, debug, response) {
     var tbody = document.getElementById('ct-tbody');
     var wrap = document.getElementById('ct-table-wrap');
@@ -175,15 +201,11 @@
     var rows = isFirstRowHeader ? data.slice(1) : data;
 
     var jobToIndex = {};
-    var stageToIndex = {};
     var jobIdx = 0;
-    var stageIdx = 0;
     for (var r = 0; r < rows.length; r++) {
       var row = rows[r];
       var j = escapeText(cellValue(row, indices.job, columnNames)) || '—';
-      var s = escapeText(cellValue(row, indices.stage, columnNames)) || '—';
       if (jobToIndex[j] === undefined) jobToIndex[j] = jobIdx++;
-      if (stageToIndex[s] === undefined) stageToIndex[s] = stageIdx++;
     }
 
     for (var r = 0; r < rows.length; r++) {
@@ -205,9 +227,9 @@
       tdJob.textContent = escapeText(jobVal) || '—';
       tr.appendChild(tdJob);
 
+      var stageText = escapeText(stageVal) || '—';
       var tdStage = document.createElement('td');
-      tdStage.className = 'ct-tag ct-stage-' + (stageToIndex[escapeText(stageVal) || '—'] % 16);
-      tdStage.textContent = escapeText(stageVal) || '—';
+      tdStage.textContent = stageEmoji(stageVal) + ' ' + stageText;
       tr.appendChild(tdStage);
 
       var statusVal = cellValue(row, indices.status, columnNames);
@@ -215,8 +237,7 @@
       var sourceVal = cellValue(row, indices.source, columnNames);
       var statusKey = escapeText(statusVal) || '—';
       var tdStatus = document.createElement('td');
-      tdStatus.className = 'ct-tag ct-status-' + (hashToIndex(statusKey) % 16);
-      tdStatus.textContent = statusKey;
+      tdStatus.textContent = statusEmoji(statusVal) + ' ' + statusKey;
       tr.appendChild(tdStatus);
       var tdStatusDate = document.createElement('td');
       var statusDateFormatted = formatDate(statusDateVal);

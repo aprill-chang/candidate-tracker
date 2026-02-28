@@ -182,40 +182,6 @@ body.candidate-tracker-page {
 .ct-table .ct-job-14 { background: #fed7aa; }
 .ct-table .ct-job-15 { background: #a5f3fc; }
 
-.ct-table .ct-stage-0 { background: #dbeafe; }
-.ct-table .ct-stage-1 { background: #fce7f3; }
-.ct-table .ct-stage-2 { background: #d1fae5; }
-.ct-table .ct-stage-3 { background: #fef3c7; }
-.ct-table .ct-stage-4 { background: #e0e7ff; }
-.ct-table .ct-stage-5 { background: #f3e8ff; }
-.ct-table .ct-stage-6 { background: #ffedd5; }
-.ct-table .ct-stage-7 { background: #ccfbf1; }
-.ct-table .ct-stage-8 { background: #fecdd3; }
-.ct-table .ct-stage-9 { background: #e9d5ff; }
-.ct-table .ct-stage-10 { background: #bfdbfe; }
-.ct-table .ct-stage-11 { background: #bbf7d0; }
-.ct-table .ct-stage-12 { background: #fde68a; }
-.ct-table .ct-stage-13 { background: #ddd6fe; }
-.ct-table .ct-stage-14 { background: #fed7aa; }
-.ct-table .ct-stage-15 { background: #a5f3fc; }
-
-.ct-table .ct-status-0 { background: #dbeafe; }
-.ct-table .ct-status-1 { background: #fce7f3; }
-.ct-table .ct-status-2 { background: #d1fae5; }
-.ct-table .ct-status-3 { background: #fef3c7; }
-.ct-table .ct-status-4 { background: #e0e7ff; }
-.ct-table .ct-status-5 { background: #f3e8ff; }
-.ct-table .ct-status-6 { background: #ffedd5; }
-.ct-table .ct-status-7 { background: #ccfbf1; }
-.ct-table .ct-status-8 { background: #fecdd3; }
-.ct-table .ct-status-9 { background: #e9d5ff; }
-.ct-table .ct-status-10 { background: #bfdbfe; }
-.ct-table .ct-status-11 { background: #bbf7d0; }
-.ct-table .ct-status-12 { background: #fde68a; }
-.ct-table .ct-status-13 { background: #ddd6fe; }
-.ct-table .ct-status-14 { background: #fed7aa; }
-.ct-table .ct-status-15 { background: #a5f3fc; }
-
 .ct-table .ct-empty-message {
   padding: 2rem 1rem;
   text-align: center;
