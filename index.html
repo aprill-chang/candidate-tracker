@@ -18,19 +18,35 @@
     <div id="ct-error" class="ct-error" hidden></div>
     <p id="ct-column-hint" class="ct-column-hint" hidden aria-live="polite"></p>
     <div id="ct-filters" class="ct-filters" hidden>
-      <p class="ct-filter-hint">Hold Ctrl (Windows) or Cmd (Mac) to select multiple. Empty = show all.</p>
-      <label class="ct-filter-label"><span>Job</span>
-        <select id="ct-filter-job" class="ct-filter-select ct-filter-multi" multiple aria-label="Filter by job (multi-select)"></select>
-      </label>
-      <label class="ct-filter-label"><span>Stage</span>
-        <select id="ct-filter-stage" class="ct-filter-select ct-filter-multi" multiple aria-label="Filter by interview stage (multi-select)"></select>
-      </label>
-      <label class="ct-filter-label"><span>Status</span>
-        <select id="ct-filter-status" class="ct-filter-select ct-filter-multi" multiple aria-label="Filter by status (multi-select)"></select>
-      </label>
-      <label class="ct-filter-label"><span>Source</span>
-        <select id="ct-filter-source" class="ct-filter-select ct-filter-multi" multiple aria-label="Filter by source (multi-select)"></select>
-      </label>
+      <p class="ct-filter-hint">Select one or more options per filter. Empty = show all.</p>
+      <div class="ct-filter-dropdown-wrap">
+        <span class="ct-filter-label">Job</span>
+        <div class="ct-dropdown" id="ct-dropdown-job">
+          <button type="button" class="ct-dropdown-trigger" id="ct-trigger-job" aria-haspopup="listbox" aria-expanded="false" aria-label="Filter by job">All jobs</button>
+          <div class="ct-dropdown-panel" id="ct-panel-job" role="listbox" aria-label="Job options" hidden></div>
+        </div>
+      </div>
+      <div class="ct-filter-dropdown-wrap">
+        <span class="ct-filter-label">Stage</span>
+        <div class="ct-dropdown" id="ct-dropdown-stage">
+          <button type="button" class="ct-dropdown-trigger" id="ct-trigger-stage" aria-haspopup="listbox" aria-expanded="false" aria-label="Filter by stage">All stages</button>
+          <div class="ct-dropdown-panel" id="ct-panel-stage" role="listbox" aria-label="Stage options" hidden></div>
+        </div>
+      </div>
+      <div class="ct-filter-dropdown-wrap">
+        <span class="ct-filter-label">Status</span>
+        <div class="ct-dropdown" id="ct-dropdown-status">
+          <button type="button" class="ct-dropdown-trigger" id="ct-trigger-status" aria-haspopup="listbox" aria-expanded="false" aria-label="Filter by status">All statuses</button>
+          <div class="ct-dropdown-panel" id="ct-panel-status" role="listbox" aria-label="Status options" hidden></div>
+        </div>
+      </div>
+      <div class="ct-filter-dropdown-wrap">
+        <span class="ct-filter-label">Source</span>
+        <div class="ct-dropdown" id="ct-dropdown-source">
+          <button type="button" class="ct-dropdown-trigger" id="ct-trigger-source" aria-haspopup="listbox" aria-expanded="false" aria-label="Filter by source">All sources</button>
+          <div class="ct-dropdown-panel" id="ct-panel-source" role="listbox" aria-label="Source options" hidden></div>
+        </div>
+      </div>
     </div>
     <div class="ct-table-wrap" id="ct-table-wrap" hidden>
       <table class="ct-table" id="ct-table" role="grid">
@@ -192,21 +208,17 @@
 
     if (!columnNames.length || !data.length) {
       wrap.hidden = false;
-      var emptyRow = document.createElement('tr');
-      var emptyCell = document.createElement('td');
-      emptyCell.colSpan = 7;
-      emptyCell.className = 'ct-empty-message';
-      var msg = fullData.length > 0 ? 'No candidates match the current filters.' : 'No candidate rows in the report. Check that your Ashby report has data and that filters are saved.';
-      var status = response && response._status;
-      var reason = response && response._failureReason;
-      if (status) msg += ' (Status: ' + status + ')';
-      if (reason) msg += ' Reason: ' + reason + '.';
-      if (debug) {
-        msg += ' [Debug: ' + JSON.stringify(debug) + ']';
+      if (fullData.length > 0) {
+        /* No candidates match filters: show blank (empty body) */
+      } else {
+        var emptyRow = document.createElement('tr');
+        var emptyCell = document.createElement('td');
+        emptyCell.colSpan = 7;
+        emptyCell.className = 'ct-empty-message';
+        emptyCell.textContent = 'No candidate rows in the report. Check that your Ashby report has data and that filters are saved.';
+        emptyRow.appendChild(emptyCell);
+        tbody.appendChild(emptyRow);
       }
-      emptyCell.textContent = msg;
-      emptyRow.appendChild(emptyCell);
-      tbody.appendChild(emptyRow);
       return;
     }
 
@@ -308,34 +320,90 @@
   }
 
   function populateFilterOptions() {
-    function fillSelect(id, options) {
-      var sel = document.getElementById(id);
-      if (!sel) return;
-      sel.textContent = '';
+    function fillPanel(panelId, options) {
+      var panel = document.getElementById(panelId);
+      if (!panel) return;
+      panel.textContent = '';
       options.forEach(function (opt) {
-        var o = document.createElement('option');
-        o.value = opt;
-        o.textContent = opt;
-        sel.appendChild(o);
+        var label = document.createElement('label');
+        label.className = 'ct-dropdown-option';
+        var cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.value = opt;
+        cb.setAttribute('data-value', opt);
+        label.appendChild(cb);
+        label.appendChild(document.createTextNode(opt));
+        panel.appendChild(label);
       });
     }
-    fillSelect('ct-filter-job', uniqueJobs);
-    fillSelect('ct-filter-stage', uniqueStages);
-    fillSelect('ct-filter-status', uniqueStatuses);
-    fillSelect('ct-filter-source', uniqueSources);
+    fillPanel('ct-panel-job', uniqueJobs);
+    fillPanel('ct-panel-stage', uniqueStages);
+    fillPanel('ct-panel-status', uniqueStatuses);
+    fillPanel('ct-panel-source', uniqueSources);
   }
 
   function getFilterValues() {
-    function selectedValues(sel) {
-      if (!sel) return [];
-      return Array.from(sel.selectedOptions || []).map(function (o) { return o.value; });
+    function selectedFromPanel(panelId) {
+      var panel = document.getElementById(panelId);
+      if (!panel) return [];
+      var boxes = panel.querySelectorAll('input[type="checkbox"]:checked');
+      var out = [];
+      for (var i = 0; i < boxes.length; i++) out.push(boxes[i].value);
+      return out;
     }
     return {
-      job: selectedValues(document.getElementById('ct-filter-job')),
-      stage: selectedValues(document.getElementById('ct-filter-stage')),
-      status: selectedValues(document.getElementById('ct-filter-status')),
-      source: selectedValues(document.getElementById('ct-filter-source'))
+      job: selectedFromPanel('ct-panel-job'),
+      stage: selectedFromPanel('ct-panel-stage'),
+      status: selectedFromPanel('ct-panel-status'),
+      source: selectedFromPanel('ct-panel-source')
     };
+  }
+
+  function updateDropdownLabels() {
+    var f = getFilterValues();
+    function label(count, allLabel, triggerId) {
+      if (count === 0) return allLabel;
+      return count + ' selected';
+    }
+    var tJob = document.getElementById('ct-trigger-job');
+    var tStage = document.getElementById('ct-trigger-stage');
+    var tStatus = document.getElementById('ct-trigger-status');
+    var tSource = document.getElementById('ct-trigger-source');
+    if (tJob) tJob.textContent = label(f.job.length, 'All jobs', 'ct-trigger-job');
+    if (tStage) tStage.textContent = label(f.stage.length, 'All stages', 'ct-trigger-stage');
+    if (tStatus) tStatus.textContent = label(f.status.length, 'All statuses', 'ct-trigger-status');
+    if (tSource) tSource.textContent = label(f.source.length, 'All sources', 'ct-trigger-source');
+  }
+
+  function closeAllDropdowns() {
+    ['job', 'stage', 'status', 'source'].forEach(function (key) {
+      var panel = document.getElementById('ct-panel-' + key);
+      var trigger = document.getElementById('ct-trigger-' + key);
+      if (panel) { panel.hidden = true; }
+      if (trigger) { trigger.setAttribute('aria-expanded', 'false'); }
+    });
+  }
+
+  function setupDropdown(key, raw) {
+    var trigger = document.getElementById('ct-trigger-' + key);
+    var panel = document.getElementById('ct-panel-' + key);
+    if (!trigger || !panel) return;
+    trigger.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var isOpen = !panel.hidden;
+      closeAllDropdowns();
+      if (!isOpen) {
+        panel.hidden = false;
+        trigger.setAttribute('aria-expanded', 'true');
+      }
+    });
+    panel.addEventListener('change', function () {
+      updateDropdownLabels();
+      applyFilterAndSort(raw);
+    });
+    panel.addEventListener('click', function (e) {
+      e.stopPropagation();
+    });
   }
 
   function applyFilterAndSort(lastRaw) {
@@ -373,6 +441,7 @@
       });
     }
     renderTable(fullColumnNames, filtered, lastRaw && lastRaw._debug, lastRaw, fullJobToIndex);
+    updateDropdownLabels();
     var metaEl = document.getElementById('ct-meta');
     if (metaEl) metaEl.textContent = (metaEl.getAttribute('data-sync-text') || '') + (filtered.length !== fullData.length ? ' · Showing ' + filtered.length + ' of ' + fullData.length : '');
     var icons = document.querySelectorAll('.ct-sort-icon');
@@ -482,10 +551,8 @@
         if (filtersEl) {
           filtersEl.hidden = false;
           populateFilterOptions();
-          document.getElementById('ct-filter-job').addEventListener('change', function () { applyFilterAndSort(raw); });
-          document.getElementById('ct-filter-stage').addEventListener('change', function () { applyFilterAndSort(raw); });
-          document.getElementById('ct-filter-status').addEventListener('change', function () { applyFilterAndSort(raw); });
-          document.getElementById('ct-filter-source').addEventListener('change', function () { applyFilterAndSort(raw); });
+          ['job', 'stage', 'status', 'source'].forEach(function (k) { setupDropdown(k, raw); });
+          document.addEventListener('click', closeAllDropdowns);
         }
         document.querySelectorAll('.ct-sortable').forEach(function (th) {
           th.addEventListener('click', function () {
