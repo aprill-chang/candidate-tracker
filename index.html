@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Candidate Tracker</title>
+  <link rel="stylesheet" href="candidate-tracker.css">
+</head>
+<body class="candidate-tracker-page">
+  <div class="ct-wrap">
+    <header class="ct-header">
+      <h1 class="ct-title">Candidate Tracker</h1>
+      <div class="ct-meta" id="ct-meta" aria-live="polite"></div>
+      <button type="button" class="ct-refresh" id="ct-refresh" aria-label="Refresh from Ashby">Refresh</button>
+    </header>
+
+    <div id="ct-loading" class="ct-loading" hidden>Loading report…</div>
+    <div id="ct-error" class="ct-error" hidden></div>
+    <div class="ct-table-wrap" id="ct-table-wrap" hidden>
+      <table class="ct-table" id="ct-table" role="grid">
+        <thead>
+          <tr>
+            <th scope="col">Candidate name</th>
+            <th scope="col">Candidate job</th>
+            <th scope="col">Current interview stage</th>
+            <th scope="col">Current interview date</th>
+            <th scope="col">Note</th>
+          </tr>
+        </thead>
+        <tbody id="ct-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+(function () {
+  'use strict';
+
+  var LOCALSTORAGE_PREFIX = 'candidate-tracker-note-';
+
+  var possibleNames = ['candidate', 'name', 'full name', 'candidate name'];
+  var possibleJobs = ['job', 'opening', 'position', 'role', 'title'];
+  var possibleStages = ['stage', 'interview stage', 'current stage', 'current interview stage'];
+  var possibleDates = ['interview date', 'next interview', 'date', 'scheduled', 'current interview date', 'next interview date'];
+
+  function findColumnIndex(columnNames, possible) {
+    var lower = columnNames.map(function (c) { return (c || '').toLowerCase().trim(); });
+    for (var i = 0; i < possible.length; i++) {
+      var p = possible[i];
+      for (var j = 0; j < lower.length; j++) {
+        if (lower[j].indexOf(p) !== -1 || p.indexOf(lower[j]) !== -1) return j;
+      }
+    }
+    return -1;
+  }
+
+  function buildRowId(row, indices, columnNames, rowIndex) {
+    var idCol = -1;
+    var lower = columnNames.map(function (c) { return (c || '').toLowerCase().trim(); });
+    if (lower.indexOf('id') !== -1) idCol = lower.indexOf('id');
+    else if (lower.indexOf('candidate id') !== -1) idCol = lower.indexOf('candidate id');
+    if (idCol >= 0 && row[idCol]) return String(row[idCol]).trim();
+    var name = indices.name >= 0 ? String(row[indices.name] || '').trim() : '';
+    var job = indices.job >= 0 ? String(row[indices.job] || '').trim() : '';
+    return (name + '|' + job) || 'row-' + rowIndex;
+  }
+
+  function formatDate(val) {
+    if (val == null || val === '') return null;
+    var s = String(val).trim();
+    if (!s) return null;
+    var d = new Date(s);
+    if (isNaN(d.getTime())) return null;
+    return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  }
+
+  function displayDate(val) {
+    var formatted = formatDate(val);
+    return formatted ? formatted : 'Scheduling';
+  }
+
+  function getStoredNote(rowId) {
+    try {
+      return localStorage.getItem(LOCALSTORAGE_PREFIX + rowId) || '';
+    } catch (e) {
+      return '';
+    }
+  }
+
+  function setStoredNote(rowId, text) {
+    try {
+      localStorage.setItem(LOCALSTORAGE_PREFIX + rowId, text);
+    } catch (e) {}
+  }
+
+  function escapeText(str) {
+    return String(str == null ? '' : str).trim();
+  }
+
+  function renderTable(columnNames, data) {
+    var tbody = document.getElementById('ct-tbody');
+    var wrap = document.getElementById('ct-table-wrap');
+    tbody.textContent = '';
+
+    if (!columnNames.length || !data.length) {
+      wrap.hidden = false;
+      return;
+    }
+
+    var indices = {
+      name: findColumnIndex(columnNames, possibleNames),
+      job: findColumnIndex(columnNames, possibleJobs),
+      stage: findColumnIndex(columnNames, possibleStages),
+      date: findColumnIndex(columnNames, possibleDates)
+    };
+
+    var firstRow = data[0];
+    var isFirstRowHeader = firstRow && columnNames.length === firstRow.length &&
+      columnNames.every(function (h, i) { return String(firstRow[i] || '').trim() === String(h || '').trim(); });
+    var rows = isFirstRowHeader ? data.slice(1) : data;
+
+    for (var r = 0; r < rows.length; r++) {
+      var row = rows[r];
+      var rowId = buildRowId(row, indices, columnNames, r);
+      var nameVal = indices.name >= 0 ? row[indices.name] : '';
+      var jobVal = indices.job >= 0 ? row[indices.job] : '';
+      var stageVal = indices.stage >= 0 ? row[indices.stage] : '';
+      var dateVal = indices.date >= 0 ? row[indices.date] : '';
+      var isScheduling = !formatDate(dateVal);
+      var noteVal = getStoredNote(rowId);
+
+      var tr = document.createElement('tr');
+
+      var tdName = document.createElement('td');
+      tdName.textContent = escapeText(nameVal) || '—';
+      tr.appendChild(tdName);
+
+      var tdJob = document.createElement('td');
+      tdJob.textContent = escapeText(jobVal) || '—';
+      tr.appendChild(tdJob);
+
+      var tdStage = document.createElement('td');
+      tdStage.textContent = escapeText(stageVal) || '—';
+      tr.appendChild(tdStage);
+
+      var tdDate = document.createElement('td');
+      if (isScheduling) {
+        tdDate.classList.add('ct-date-scheduling');
+        tdDate.textContent = 'Scheduling';
+      } else {
+        tdDate.textContent = displayDate(dateVal);
+      }
+      tr.appendChild(tdDate);
+
+      var tdNote = document.createElement('td');
+      tdNote.className = 'ct-note-cell';
+      var input = document.createElement('textarea');
+      input.className = 'ct-note-input';
+      input.rows = 2;
+      input.setAttribute('aria-label', 'Note for ' + escapeText(nameVal));
+      input.value = noteVal;
+      input.addEventListener('change', function (ev) {
+        setStoredNote(rowId, ev.target.value);
+      });
+      input.addEventListener('input', function (ev) {
+        setStoredNote(rowId, ev.target.value);
+      });
+      tdNote.appendChild(input);
+      tr.appendChild(tdNote);
+
+      tbody.appendChild(tr);
+    }
+
+    wrap.hidden = false;
+  }
+
+  function setMeta(text) {
+    var el = document.getElementById('ct-meta');
+    if (el) el.textContent = text;
+  }
+
+  function setLoading(show) {
+    document.getElementById('ct-loading').hidden = !show;
+  }
+
+  function setError(msg) {
+    var el = document.getElementById('ct-error');
+    el.hidden = !msg;
+    if (msg) el.textContent = msg;
+  }
+
+  function hideTable() {
+    document.getElementById('ct-table-wrap').hidden = true;
+  }
+
+  function fetchReport() {
+    setLoading(true);
+    setError('');
+    hideTable();
+    setMeta('');
+
+    fetch('/api/ashby-report')
+      .then(function (res) {
+        return res.json().then(function (data) {
+          return { ok: res.ok, status: res.status, data: data };
+        });
+      })
+      .then(function (result) {
+        setLoading(false);
+        if (!result.ok) {
+          var msg = (result.data && result.data.error) ? result.data.error : 'Failed to load report';
+          if (result.data && result.data.details && result.data.details.message) {
+            msg += ': ' + result.data.details.message;
+          }
+          setError(msg);
+          return;
+        }
+        var columnNames = result.data.columnNames || [];
+        var data = result.data.data || [];
+        if (Array.isArray(data[0]) && data[0].length && !columnNames.length && typeof data[0][0] === 'string') {
+          columnNames = data[0];
+          data = data.slice(1);
+        }
+        renderTable(columnNames, data);
+        setMeta('Last synced ' + new Date().toLocaleString());
+      })
+      .catch(function (err) {
+        setLoading(false);
+        setError('Network error: ' + (err.message || 'Could not reach server'));
+      });
+  }
+
+  document.getElementById('ct-refresh').addEventListener('click', fetchReport);
+  fetchReport();
+})();
+  </script>
+</body>
+</html>
