@@ -21,9 +21,12 @@
       <h2 class="ct-section-title">Active candidates</h2>
       <div class="ct-table-wrap" id="ct-table-wrap">
         <table class="ct-table" id="ct-table" role="grid">
+          <colgroup>
+            <col><col><col><col><col class="ct-col-status-date"><col><col>
+          </colgroup>
           <thead>
             <tr class="ct-filter-row">
-              <td class="ct-filter-cell"><span class="ct-filter-hint">Filters: multi-select = show all if empty.</span></td>
+              <td class="ct-filter-cell"></td>
               <td class="ct-filter-cell">
                 <div class="ct-dropdown" id="ct-dropdown-job">
                   <button type="button" class="ct-dropdown-trigger" id="ct-trigger-job" aria-haspopup="listbox" aria-expanded="false" aria-label="Filter by job">All jobs</button>
@@ -49,7 +52,7 @@
                   <option value="last-week">Last week</option>
                   <option value="this-week">This week</option>
                   <option value="next-week">Next week</option>
-                  <option value="range">Select time range</option>
+                  <option value="range">Select date range</option>
                 </select>
                 <div id="ct-status-date-range-wrap" class="ct-status-date-range-wrap" hidden>
                   <label class="ct-date-range-label"><span>From</span> <input type="date" id="ct-status-date-from" class="ct-filter-input-date" aria-label="Status date from"></label>
@@ -805,6 +808,7 @@
         var statusDateSel = document.getElementById('ct-filter-status-date');
         var rangeWrap = document.getElementById('ct-status-date-range-wrap');
         if (statusDateSel && rangeWrap) {
+          rangeWrap.hidden = statusDateSel.value !== 'range';
           statusDateSel.onchange = function () {
             rangeWrap.hidden = this.value !== 'range';
             applyFilterAndSort(raw);
