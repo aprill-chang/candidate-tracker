@@ -16,3 +16,12 @@ A mobile-friendly, single-page gallery with a hero video, “Thank you for comin
 - **Section photos:** Replace the placeholder image URLs in `index.html` with your own. You can point `src` to files under `assets/` (e.g. `assets/getting-ready-1.jpg`) or to your own URLs. Each section has a `.photo-grid`; add or change `<img>` tags as needed.
 
 No build step required. You can host the folder on Netlify, GitHub Pages, or any static host.
+
+---
+
+## Candidate Tracker (Ashby)
+
+A separate page at **`/candidate-tracker.html`** pulls candidate data from a saved Ashby report and displays it in a table with columns: Candidate name, Job, Current interview stage, Current interview date (or "Scheduling"), and a **Note** textbox (stored in your browser only).
+
+- **To use it:** Deploy this project to Vercel (or run `vercel dev` locally) so the `/api/ashby-report` serverless function is available. Open `/candidate-tracker.html`.
+- **Environment variable:** Set **`ASHBY_API_KEY`** in Vercel (Project → Settings → Environment Variables) and in `.env` or `.env.local` for local dev. The key must have **Reports – Read** permission in [Ashby API keys](https://app.ashbyhq.com/admin/api/keys). Do not commit the API key.

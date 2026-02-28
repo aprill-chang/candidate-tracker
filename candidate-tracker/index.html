@@ -16,20 +16,90 @@
 
     <div id="ct-loading" class="ct-loading" hidden>Loading report…</div>
     <div id="ct-error" class="ct-error" hidden></div>
-    <div class="ct-table-wrap" id="ct-table-wrap" hidden>
-      <table class="ct-table" id="ct-table" role="grid">
-        <thead>
-          <tr>
-            <th scope="col">Candidate name</th>
-            <th scope="col">Candidate job</th>
-            <th scope="col">Current interview stage</th>
-            <th scope="col">Current interview date</th>
-            <th scope="col">Note</th>
-          </tr>
-        </thead>
-        <tbody id="ct-tbody"></tbody>
-      </table>
-    </div>
+    <section class="ct-section" id="ct-active-section" hidden>
+      <h2 class="ct-section-title">Active candidates</h2>
+      <div class="ct-table-wrap" id="ct-table-wrap">
+        <table class="ct-table" id="ct-table" role="grid">
+          <colgroup>
+            <col><col><col><col><col class="ct-col-status-date"><col><col>
+          </colgroup>
+          <thead>
+            <tr class="ct-filter-row">
+              <td class="ct-filter-cell"></td>
+              <td class="ct-filter-cell">
+                <div class="ct-dropdown" id="ct-dropdown-job">
+                  <button type="button" class="ct-dropdown-trigger" id="ct-trigger-job" aria-haspopup="listbox" aria-expanded="false" aria-label="Filter by job">All jobs</button>
+                  <div class="ct-dropdown-panel" id="ct-panel-job" role="listbox" aria-label="Job options" hidden></div>
+                </div>
+              </td>
+              <td class="ct-filter-cell">
+                <div class="ct-dropdown" id="ct-dropdown-stage">
+                  <button type="button" class="ct-dropdown-trigger" id="ct-trigger-stage" aria-haspopup="listbox" aria-expanded="false" aria-label="Filter by stage">All stages</button>
+                  <div class="ct-dropdown-panel" id="ct-panel-stage" role="listbox" aria-label="Stage options" hidden></div>
+                </div>
+              </td>
+              <td class="ct-filter-cell">
+                <div class="ct-dropdown" id="ct-dropdown-status">
+                  <button type="button" class="ct-dropdown-trigger" id="ct-trigger-status" aria-haspopup="listbox" aria-expanded="false" aria-label="Filter by status">All statuses</button>
+                  <div class="ct-dropdown-panel" id="ct-panel-status" role="listbox" aria-label="Status options" hidden></div>
+                </div>
+              </td>
+              <td class="ct-filter-cell">
+                <select id="ct-filter-status-date" class="ct-filter-select ct-filter-status-date" aria-label="Filter by status date">
+                  <option value="">All</option>
+                  <option value="past-due">Past due</option>
+                  <option value="last-week">Last week</option>
+                  <option value="this-week">This week</option>
+                  <option value="next-week">Next week</option>
+                  <option value="range">Select date range</option>
+                </select>
+                <div id="ct-status-date-range-wrap" class="ct-status-date-range-wrap" aria-hidden="true">
+                  <input type="hidden" id="ct-status-date-from" aria-label="Status date from">
+                  <input type="hidden" id="ct-status-date-to" aria-label="Status date to">
+                  <div id="ct-date-range-calendar" class="ct-date-range-calendar"></div>
+                </div>
+              </td>
+              <td class="ct-filter-cell">
+                <div class="ct-dropdown" id="ct-dropdown-source">
+                  <button type="button" class="ct-dropdown-trigger" id="ct-trigger-source" aria-haspopup="listbox" aria-expanded="false" aria-label="Filter by source">All sources</button>
+                  <div class="ct-dropdown-panel" id="ct-panel-source" role="listbox" aria-label="Source options" hidden></div>
+                </div>
+              </td>
+              <td class="ct-filter-cell"></td>
+            </tr>
+            <tr>
+              <th scope="col" class="ct-sortable" data-sort="name" id="ct-th-name">Candidate name <span class="ct-sort-icon" aria-hidden="true"></span></th>
+              <th scope="col" class="ct-sortable" data-sort="job" id="ct-th-job">Candidate job <span class="ct-sort-icon" aria-hidden="true"></span></th>
+              <th scope="col" class="ct-sortable" data-sort="stage" id="ct-th-stage">Current interview stage <span class="ct-sort-icon" aria-hidden="true"></span></th>
+              <th scope="col" class="ct-sortable" data-sort="status" id="ct-th-status">Status <span class="ct-sort-icon" aria-hidden="true"></span></th>
+              <th scope="col" class="ct-sortable" data-sort="statusDate" id="ct-th-statusDate">Status date <span class="ct-sort-icon" aria-hidden="true"></span></th>
+              <th scope="col" class="ct-sortable" data-sort="source" id="ct-th-source">Source <span class="ct-sort-icon" aria-hidden="true"></span></th>
+              <th scope="col">Note</th>
+            </tr>
+          </thead>
+          <tbody id="ct-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+    <section class="ct-section" id="ct-archived-section" hidden>
+      <h2 class="ct-section-title">Archived candidates</h2>
+      <div class="ct-table-wrap" id="ct-archived-table-wrap">
+        <table class="ct-table" id="ct-archived-table" role="grid">
+          <thead>
+            <tr>
+              <th scope="col">Candidate name</th>
+              <th scope="col">Candidate job</th>
+              <th scope="col">Current interview stage</th>
+              <th scope="col">Status</th>
+              <th scope="col">Status date</th>
+              <th scope="col">Source</th>
+              <th scope="col">Note</th>
+            </tr>
+          </thead>
+          <tbody id="ct-archived-tbody"></tbody>
+        </table>
+      </div>
+    </section>
   </div>
 
   <script>
@@ -39,16 +109,58 @@
   var LOCALSTORAGE_PREFIX = 'candidate-tracker-note-';
 
   var possibleNames = ['candidate', 'name', 'full name', 'candidate name'];
-  var possibleJobs = ['job', 'opening', 'position', 'role', 'title'];
-  var possibleStages = ['stage', 'interview stage', 'current stage', 'current interview stage'];
-  var possibleDates = ['interview date', 'next interview', 'date', 'scheduled', 'current interview date', 'next interview date'];
+  var possibleJobs = ['job', 'opening', 'position', 'role', 'title', 'job title'];
+  var possibleStages = ['stage', 'interview stage', 'current stage', 'current interview stage', 'furthest stage group reached'];
+  var possibleStatus = ['status', 'application status', 'stage', 'state'];
+  var possibleStatusDate = ['activity status due at', 'status date', 'status changed', 'interview date', 'next interview date', 'next interview', 'scheduled date', 'scheduled at', 'scheduled for', 'interview scheduled', 'scheduled', 'current interview date', 'upcoming interview', 'last updated', 'updated at', 'updated', 'stage change date', 'stage changed', 'last activity', 'date scheduled', 'date'];
+  var possibleSource = ['source', 'credited to', 'referral', 'sourcing source'];
+  var possibleIds = ['ashby candidate id', 'candidate id', 'id', 'candidateId', 'candidate_id'];
+  var possibleApplicationIds = ['ashby job id', 'application id', 'job application id', 'ashby application id', 'applicationId', 'application_id', 'consideration id'];
+  var ASHBY_PEOPLE_BASE = 'https://app.ashbyhq.com/people/';
+  var ASHBY_CANDIDATE_FEED_BASE = 'https://app.ashbyhq.com/home/upcoming/right-side/candidates/';
 
-  function findColumnIndex(columnNames, possible) {
-    var lower = columnNames.map(function (c) { return (c || '').toLowerCase().trim(); });
+  function findColumnIndex(columnNames, possible, excludeIndices) {
+    var exclude = excludeIndices || [];
+    var lower = columnNames.map(function (c) { return (c || '').toLowerCase().trim().replace(/\s+/g, ' '); });
     for (var i = 0; i < possible.length; i++) {
-      var p = possible[i];
+      var p = (possible[i] || '').toLowerCase().trim().replace(/\s+/g, ' ');
       for (var j = 0; j < lower.length; j++) {
+        if (exclude.indexOf(j) !== -1) continue;
         if (lower[j].indexOf(p) !== -1 || p.indexOf(lower[j]) !== -1) return j;
+      }
+    }
+    return -1;
+  }
+
+  function findAshbyCandidateIdColumn(columnNames, excludeIndices) {
+    var exclude = excludeIndices || [];
+    for (var j = 0; j < columnNames.length; j++) {
+      if (exclude.indexOf(j) !== -1) continue;
+      var lower = (columnNames[j] || '').toLowerCase().trim().replace(/\s+/g, ' ');
+      if (lower.indexOf('ashby') !== -1 && lower.indexOf('candidate') !== -1 && lower.indexOf('id') !== -1) return j;
+    }
+    return -1;
+  }
+
+  function findApplicationIdColumn(columnNames, excludeIndices) {
+    var exclude = excludeIndices || [];
+    for (var j = 0; j < columnNames.length; j++) {
+      if (exclude.indexOf(j) !== -1) continue;
+      var lower = (columnNames[j] || '').toLowerCase().trim().replace(/\s+/g, ' ');
+      if ((lower.indexOf('ashby') !== -1 && lower.indexOf('job') !== -1 && lower.indexOf('id') !== -1) ||
+          (lower.indexOf('application') !== -1 && lower.indexOf('id') !== -1)) return j;
+    }
+    return -1;
+  }
+
+  function findFirstDateLikeColumn(columnNames, excludeIndices) {
+    var exclude = excludeIndices || [];
+    var dateLike = ['date', 'scheduled', 'time', 'updated', 'changed', 'at'];
+    for (var j = 0; j < columnNames.length; j++) {
+      if (exclude.indexOf(j) !== -1) continue;
+      var lower = (columnNames[j] || '').toLowerCase();
+      for (var d = 0; d < dateLike.length; d++) {
+        if (lower.indexOf(dateLike[d]) !== -1) return j;
       }
     }
     return -1;
@@ -59,9 +171,12 @@
     var lower = columnNames.map(function (c) { return (c || '').toLowerCase().trim(); });
     if (lower.indexOf('id') !== -1) idCol = lower.indexOf('id');
     else if (lower.indexOf('candidate id') !== -1) idCol = lower.indexOf('candidate id');
-    if (idCol >= 0 && row[idCol]) return String(row[idCol]).trim();
-    var name = indices.name >= 0 ? String(row[indices.name] || '').trim() : '';
-    var job = indices.job >= 0 ? String(row[indices.job] || '').trim() : '';
+    if (idCol >= 0) {
+      var idVal = cellValue(row, idCol, columnNames);
+      if (idVal) return String(idVal).trim();
+    }
+    var name = indices.name >= 0 ? String(cellValue(row, indices.name, columnNames) || '').trim() : '';
+    var job = indices.job >= 0 ? String(cellValue(row, indices.job, columnNames) || '').trim() : '';
     return (name + '|' + job) || 'row-' + rowIndex;
   }
 
@@ -97,60 +212,300 @@
     return String(str == null ? '' : str).trim();
   }
 
-  function renderTable(columnNames, data) {
-    var tbody = document.getElementById('ct-tbody');
-    var wrap = document.getElementById('ct-table-wrap');
-    tbody.textContent = '';
+  function cellValue(row, colIndex, columnNames) {
+    if (colIndex < 0) return '';
+    if (Array.isArray(row)) return row[colIndex];
+    var key = columnNames[colIndex];
+    if (key != null && row[key] !== undefined && row[key] !== '') return row[key];
+    if (row && typeof row === 'object' && key) {
+      var keyLower = String(key).toLowerCase().trim();
+      for (var k in row) {
+        if (Object.prototype.hasOwnProperty.call(row, k) && (k || '').toLowerCase().trim() === keyLower) return row[k];
+      }
+    }
+    return '';
+  }
 
-    if (!columnNames.length || !data.length) {
-      wrap.hidden = false;
-      return;
+  function getCandidateId(row, columnNames, indices) {
+    if (indices.id >= 0) {
+      var val = String(cellValue(row, indices.id, columnNames) || '').trim();
+      if (val) return val;
+    }
+    if (row && typeof row === 'object' && !Array.isArray(row)) {
+      var target = 'ashby candidate id';
+      var targetNoSpaces = target.replace(/\s+/g, '');
+      for (var k in row) {
+        if (!Object.prototype.hasOwnProperty.call(row, k)) continue;
+        var keyLower = (k || '').toLowerCase().trim();
+        var keyNoSpaces = keyLower.replace(/\s+/g, '');
+        if (keyLower === target || keyNoSpaces === targetNoSpaces) {
+          var v = row[k];
+          if (v != null && v !== '') return String(v).trim();
+        }
+      }
+      for (var k2 in row) {
+        if (Object.prototype.hasOwnProperty.call(row, k2)) {
+          var lower = (k2 || '').toLowerCase().trim();
+          if (lower.indexOf('ashby') !== -1 && lower.indexOf('candidate') !== -1 && lower.indexOf('id') !== -1) {
+            var v2 = row[k2];
+            if (v2 != null && v2 !== '') return String(v2).trim();
+          }
+        }
+      }
+    }
+    return '';
+  }
+
+  function getApplicationId(row, columnNames, indices) {
+    if (indices.applicationId >= 0) {
+      var val = String(cellValue(row, indices.applicationId, columnNames) || '').trim();
+      if (val) return val;
+    }
+    if (row && typeof row === 'object' && !Array.isArray(row)) {
+      var targetVariants = ['ashby job id', 'application id', 'job application id', 'ashby application id', 'applicationid'];
+      for (var k in row) {
+        if (!Object.prototype.hasOwnProperty.call(row, k)) continue;
+        var keyLower = (k || '').toLowerCase().trim().replace(/\s+/g, ' ');
+        var keyNoSpaces = keyLower.replace(/\s+/g, '');
+        for (var t = 0; t < targetVariants.length; t++) {
+          if (keyLower.indexOf(targetVariants[t]) !== -1 || keyNoSpaces.indexOf(targetVariants[t].replace(/\s/g, '')) !== -1) {
+            var v = row[k];
+            if (v != null && v !== '') return String(v).trim();
+          }
+        }
+      }
+    }
+    return '';
+  }
+
+  function hashToIndex(str) {
+    var h = 0;
+    for (var i = 0; i < str.length; i++) h = ((h << 5) - h) + str.charCodeAt(i) | 0;
+    return h < 0 ? -h : h;
+  }
+
+  function stageEmoji(stage) {
+    var s = (stage || '').toLowerCase();
+    if (/intro|phone|screen/.test(s)) return '👋';
+    if (/first|1st|round 1/.test(s)) return '1️⃣';
+    if (/second|2nd|round 2/.test(s)) return '2️⃣';
+    if (/onsite|on-site|final/.test(s)) return '🏢';
+    if (/reference/.test(s)) return '📝';
+    if (/offer/.test(s)) return '📋';
+    if (/hired/.test(s)) return '✅';
+    if (/reject|archive|withdraw/.test(s)) return '❌';
+    return '📍';
+  }
+
+  function statusEmoji(status) {
+    var s = (status || '').toLowerCase();
+    if (/archived/.test(s)) return '📦';
+    if (/waiting on feedback|feedback/.test(s)) return '⏳';
+    if (/needs scheduling|scheduling/.test(s)) return '📅';
+    if (/waiting on submission|submission/.test(s)) return '📄';
+    if (/needs decision|decision/.test(s)) return '🤔';
+    if (/active|in progress/.test(s)) return '🔄';
+    if (/offer|pending offer/.test(s)) return '📋';
+    if (/hired|closed/.test(s)) return '✅';
+    return '•';
+  }
+
+  var fullColumnNames = [];
+  var fullData = [];
+  var fullIndices = null;
+  var fullJobToIndex = {};
+  var uniqueJobs = [];
+  var uniqueStages = [];
+  var uniqueStatuses = [];
+  var uniqueSources = [];
+  var sortBy = '';
+  var sortDir = 1;
+
+  function toYYYYMMDD(d) {
+    var y = d.getFullYear();
+    var m = d.getMonth() + 1;
+    var day = d.getDate();
+    return y + '-' + (m < 10 ? '0' : '') + m + '-' + (day < 10 ? '0' : '') + day;
+  }
+
+  function renderDateRangeCalendar(container, fromStr, toStr, onSelect) {
+    if (!container) return;
+    container.textContent = '';
+    var today = new Date();
+    today.setHours(0, 0, 0, 0);
+    var step = 0;
+    var fromDate = null;
+    var toDate = null;
+    var monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    var wrap = document.createElement('div');
+    wrap.className = 'ct-calendar-wrap';
+    var monthsContainer = document.createElement('div');
+    monthsContainer.className = 'ct-calendar-months';
+
+    function renderMonths() {
+      monthsContainer.textContent = '';
+      var m1 = new Date(monthStart.getFullYear(), monthStart.getMonth(), 1);
+      var m2 = new Date(m1.getFullYear(), m1.getMonth() + 1, 1);
+      [m1, m2].forEach(function (monthDate) {
+        var monthLabel = monthDate.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+        var table = document.createElement('table');
+        table.className = 'ct-calendar-month';
+        table.setAttribute('role', 'grid');
+        var thead = document.createElement('thead');
+        thead.innerHTML = '<tr><th colspan="7" class="ct-calendar-month-title">' + monthLabel + '</th></tr><tr><th scope="col" abbr="Sunday">Su</th><th scope="col" abbr="Monday">Mo</th><th scope="col" abbr="Tuesday">Tu</th><th scope="col" abbr="Wednesday">We</th><th scope="col" abbr="Thursday">Th</th><th scope="col" abbr="Friday">Fr</th><th scope="col" abbr="Saturday">Sa</th></tr>';
+        table.appendChild(thead);
+        var tbody = document.createElement('tbody');
+        var firstDay = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1).getDay();
+        var daysInMonth = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0).getDate();
+        var cells = [];
+        var i;
+        for (i = 0; i < firstDay; i++) cells.push(null);
+        for (i = 1; i <= daysInMonth; i++) cells.push(new Date(monthDate.getFullYear(), monthDate.getMonth(), i));
+        while (cells.length % 7 !== 0) cells.push(null);
+        for (var row = 0; row < cells.length / 7; row++) {
+          var tr = document.createElement('tr');
+          for (var col = 0; col < 7; col++) {
+            var td = document.createElement('td');
+            var cellDate = cells[row * 7 + col];
+            if (cellDate) {
+              var btn = document.createElement('button');
+              btn.type = 'button';
+              btn.className = 'ct-calendar-day';
+              btn.setAttribute('data-date', toYYYYMMDD(cellDate));
+              btn.textContent = cellDate.getDate();
+              var cellTime = cellDate.getTime();
+              if (fromDate && cellTime === fromDate.getTime()) btn.classList.add('ct-calendar-from');
+              if (toDate && cellTime === toDate.getTime()) btn.classList.add('ct-calendar-to');
+              if (fromDate && toDate && cellTime >= fromDate.getTime() && cellTime <= toDate.getTime()) btn.classList.add('ct-calendar-in-range');
+              if (cellTime === today.getTime()) btn.classList.add('ct-calendar-today');
+              btn.addEventListener('click', function () {
+                var d = new Date(this.getAttribute('data-date'));
+                if (step === 0) { fromDate = d; toDate = null; step = 1; }
+                else if (step === 1) {
+                  toDate = d;
+                  if (toDate.getTime() < fromDate.getTime()) { var t = fromDate; fromDate = toDate; toDate = t; }
+                  step = 2;
+                  if (onSelect) onSelect(toYYYYMMDD(fromDate), toYYYYMMDD(toDate));
+                } else { fromDate = d; toDate = null; step = 1; }
+                renderMonths();
+              });
+              td.appendChild(btn);
+            }
+            tr.appendChild(td);
+          }
+          tbody.appendChild(tr);
+        }
+        table.appendChild(tbody);
+        monthsContainer.appendChild(table);
+      });
     }
 
-    var indices = {
-      name: findColumnIndex(columnNames, possibleNames),
-      job: findColumnIndex(columnNames, possibleJobs),
-      stage: findColumnIndex(columnNames, possibleStages),
-      date: findColumnIndex(columnNames, possibleDates)
-    };
+    if (fromStr) fromDate = new Date(fromStr);
+    if (toStr) toDate = new Date(toStr);
+    if (fromDate) fromDate.setHours(0, 0, 0, 0);
+    if (toDate) toDate.setHours(0, 0, 0, 0);
+    if (fromDate) step = toDate ? 2 : 1;
 
-    var firstRow = data[0];
-    var isFirstRowHeader = firstRow && columnNames.length === firstRow.length &&
-      columnNames.every(function (h, i) { return String(firstRow[i] || '').trim() === String(h || '').trim(); });
-    var rows = isFirstRowHeader ? data.slice(1) : data;
+    renderMonths();
 
+    var nav = document.createElement('div');
+    nav.className = 'ct-calendar-nav';
+    var prevBtn = document.createElement('button');
+    prevBtn.type = 'button';
+    prevBtn.className = 'ct-calendar-nav-btn';
+    prevBtn.textContent = '← Prev';
+    prevBtn.setAttribute('aria-label', 'Previous months');
+    prevBtn.addEventListener('click', function () {
+      monthStart = new Date(monthStart.getFullYear(), monthStart.getMonth() - 1, 1);
+      renderMonths();
+    });
+    var nextBtn = document.createElement('button');
+    nextBtn.type = 'button';
+    nextBtn.className = 'ct-calendar-nav-btn';
+    nextBtn.textContent = 'Next →';
+    nextBtn.setAttribute('aria-label', 'Next months');
+    nextBtn.addEventListener('click', function () {
+      monthStart = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 1);
+      renderMonths();
+    });
+    nav.appendChild(prevBtn);
+    nav.appendChild(nextBtn);
+    wrap.appendChild(monthsContainer);
+    wrap.appendChild(nav);
+
+    var clearBtn = document.createElement('button');
+    clearBtn.type = 'button';
+    clearBtn.className = 'ct-calendar-clear';
+    clearBtn.textContent = 'Clear range';
+    clearBtn.addEventListener('click', function () {
+      fromDate = null;
+      toDate = null;
+      step = 0;
+      if (onSelect) onSelect('', '');
+      renderMonths();
+    });
+    wrap.appendChild(clearBtn);
+
+    container.appendChild(wrap);
+  }
+
+  function renderTableBody(tbody, columnNames, rows, indices, jobToIndex) {
+    tbody.textContent = '';
     for (var r = 0; r < rows.length; r++) {
       var row = rows[r];
       var rowId = buildRowId(row, indices, columnNames, r);
-      var nameVal = indices.name >= 0 ? row[indices.name] : '';
-      var jobVal = indices.job >= 0 ? row[indices.job] : '';
-      var stageVal = indices.stage >= 0 ? row[indices.stage] : '';
-      var dateVal = indices.date >= 0 ? row[indices.date] : '';
-      var isScheduling = !formatDate(dateVal);
+      var nameVal = cellValue(row, indices.name, columnNames);
+      var jobVal = cellValue(row, indices.job, columnNames);
+      var stageVal = cellValue(row, indices.stage, columnNames);
       var noteVal = getStoredNote(rowId);
 
       var tr = document.createElement('tr');
 
       var tdName = document.createElement('td');
-      tdName.textContent = escapeText(nameVal) || '—';
+      var candidateId = getCandidateId(row, columnNames, indices);
+      var applicationId = getApplicationId(row, columnNames, indices);
+      var nameDisplay = escapeText(nameVal) || '—';
+      if (candidateId) {
+        var link = document.createElement('a');
+        if (applicationId) {
+          link.href = ASHBY_CANDIDATE_FEED_BASE + encodeURIComponent(candidateId) + '/applications/' + encodeURIComponent(applicationId) + '/feed';
+        } else {
+          link.href = ASHBY_PEOPLE_BASE + encodeURIComponent(candidateId);
+        }
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.textContent = nameDisplay;
+        link.className = 'ct-name-link';
+        tdName.appendChild(link);
+      } else {
+        tdName.textContent = nameDisplay;
+      }
       tr.appendChild(tdName);
 
       var tdJob = document.createElement('td');
+      tdJob.className = 'ct-tag ct-job-' + (jobToIndex[escapeText(jobVal) || '—'] % 16);
       tdJob.textContent = escapeText(jobVal) || '—';
       tr.appendChild(tdJob);
 
+      var stageText = escapeText(stageVal) || '—';
       var tdStage = document.createElement('td');
-      tdStage.textContent = escapeText(stageVal) || '—';
+      tdStage.textContent = stageEmoji(stageVal) + ' ' + stageText;
       tr.appendChild(tdStage);
 
-      var tdDate = document.createElement('td');
-      if (isScheduling) {
-        tdDate.classList.add('ct-date-scheduling');
-        tdDate.textContent = 'Scheduling';
-      } else {
-        tdDate.textContent = displayDate(dateVal);
-      }
-      tr.appendChild(tdDate);
+      var statusVal = cellValue(row, indices.status, columnNames);
+      var statusDateVal = cellValue(row, indices.statusDate, columnNames);
+      var sourceVal = cellValue(row, indices.source, columnNames);
+      var statusKey = escapeText(statusVal) || '—';
+      var tdStatus = document.createElement('td');
+      tdStatus.textContent = statusEmoji(statusVal) + ' ' + statusKey;
+      tr.appendChild(tdStatus);
+      var tdStatusDate = document.createElement('td');
+      var statusDateFormatted = formatDate(statusDateVal);
+      tdStatusDate.textContent = statusDateFormatted ? statusDateFormatted : (escapeText(statusDateVal) || '—');
+      tr.appendChild(tdStatusDate);
+      var tdSource = document.createElement('td');
+      tdSource.textContent = escapeText(sourceVal) || '—';
+      tr.appendChild(tdSource);
 
       var tdNote = document.createElement('td');
       tdNote.className = 'ct-note-cell';
@@ -170,13 +525,318 @@
 
       tbody.appendChild(tr);
     }
+  }
 
-    wrap.hidden = false;
+  function renderTable(columnNames, activeData, archivedData, debug, response, jobToIndexOverride) {
+    var tbody = document.getElementById('ct-tbody');
+    var archivedTbody = document.getElementById('ct-archived-tbody');
+    var activeSection = document.getElementById('ct-active-section');
+    var archivedSection = document.getElementById('ct-archived-section');
+    var wrap = document.getElementById('ct-table-wrap');
+    tbody.textContent = '';
+    if (archivedTbody) archivedTbody.textContent = '';
+
+    if (!columnNames.length) {
+      activeSection.hidden = false;
+      if (archivedSection) archivedSection.hidden = true;
+      if (fullData.length > 0) {
+        /* no columns but we have data: leave tables blank */
+      } else {
+        var emptyRow = document.createElement('tr');
+        var emptyCell = document.createElement('td');
+        emptyCell.colSpan = 7;
+        emptyCell.className = 'ct-empty-message';
+        emptyCell.textContent = 'No candidate rows in the report. Check that your Ashby report has data and that filters are saved.';
+        emptyRow.appendChild(emptyCell);
+        tbody.appendChild(emptyRow);
+      }
+      return;
+    }
+
+    activeSection.hidden = false;
+    if (archivedSection) archivedSection.hidden = true;
+
+    var indices = fullIndices || (function () {
+      var i = {};
+      i.name = findColumnIndex(columnNames, possibleNames);
+      i.job = findColumnIndex(columnNames, possibleJobs, [i.name]);
+      i.stage = findColumnIndex(columnNames, possibleStages, [i.name, i.job]);
+      i.status = findColumnIndex(columnNames, possibleStatus, [i.name, i.job, i.stage]);
+      i.statusDate = findColumnIndex(columnNames, possibleStatusDate, [i.name, i.job, i.stage, i.status]);
+      if (i.statusDate < 0) i.statusDate = findFirstDateLikeColumn(columnNames, [i.name, i.job, i.stage, i.status]);
+      i.source = findColumnIndex(columnNames, possibleSource, [i.name, i.job, i.stage, i.status, i.statusDate]);
+      i.applicationId = findColumnIndex(columnNames, possibleApplicationIds, [i.name, i.job, i.stage, i.status, i.statusDate, i.source]);
+      if (i.applicationId < 0) i.applicationId = findApplicationIdColumn(columnNames, [i.name, i.job, i.stage, i.status, i.statusDate, i.source]);
+      i.id = findColumnIndex(columnNames, possibleIds, [i.name, i.job, i.stage, i.status, i.statusDate, i.source, i.applicationId]);
+      if (i.id < 0) i.id = findAshbyCandidateIdColumn(columnNames, [i.name, i.job, i.stage, i.status, i.statusDate, i.source, i.applicationId]);
+      return i;
+    })();
+    var allRows = (activeData || []).concat(archivedData || []);
+    var jobToIndex = jobToIndexOverride || (function () {
+      var map = {};
+      var idx = 0;
+      for (var r = 0; r < allRows.length; r++) {
+        var j = escapeText(cellValue(allRows[r], indices.job, columnNames)) || '—';
+        if (map[j] === undefined) map[j] = idx++;
+      }
+      return map;
+    })();
+
+    if (activeData.length) {
+      renderTableBody(tbody, columnNames, activeData, indices, jobToIndex);
+    } else if (fullData.length > 0) {
+      /* Active empty due to filters: leave tbody blank */
+    } else {
+      var emptyRow = document.createElement('tr');
+      var emptyCell = document.createElement('td');
+      emptyCell.colSpan = 7;
+      emptyCell.className = 'ct-empty-message';
+      emptyCell.textContent = 'No candidate rows in the report. Check that your Ashby report has data and that filters are saved.';
+      emptyRow.appendChild(emptyCell);
+      tbody.appendChild(emptyRow);
+    }
+
+    if (archivedSection) {
+      archivedSection.hidden = false;
+      if (archivedData.length) {
+        renderTableBody(archivedTbody, columnNames, archivedData, indices, jobToIndex);
+      } else {
+        var archivedEmptyRow = document.createElement('tr');
+        var archivedEmptyCell = document.createElement('td');
+        archivedEmptyCell.colSpan = 7;
+        archivedEmptyCell.className = 'ct-empty-message';
+        archivedEmptyCell.textContent = 'No archived candidates.';
+        archivedEmptyRow.appendChild(archivedEmptyCell);
+        archivedTbody.appendChild(archivedEmptyRow);
+      }
+    }
   }
 
   function setMeta(text) {
     var el = document.getElementById('ct-meta');
     if (el) el.textContent = text;
+  }
+
+  function getVal(row, key, columnNames, indices) {
+    var col = indices[key];
+    return col >= 0 ? cellValue(row, col, columnNames) : '';
+  }
+
+  function getDisplayVal(row, key, columnNames, indices) {
+    return escapeText(getVal(row, key, columnNames, indices)) || '—';
+  }
+
+  function isArchivedRow(row, columnNames, indices) {
+    var status = String(getVal(row, 'status', columnNames, indices) || '').toLowerCase().trim();
+    var stage = String(getVal(row, 'stage', columnNames, indices) || '').toLowerCase().trim();
+    if (/archived/.test(status)) return true;
+    if (/archived|reject|withdraw/.test(stage)) return true;
+    return false;
+  }
+
+  function populateFilterOptions() {
+    function fillPanel(panelId, options) {
+      var panel = document.getElementById(panelId);
+      if (!panel) return;
+      panel.textContent = '';
+      options.forEach(function (opt) {
+        var label = document.createElement('label');
+        label.className = 'ct-dropdown-option';
+        var cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.value = opt;
+        cb.setAttribute('data-value', opt);
+        label.appendChild(cb);
+        label.appendChild(document.createTextNode(opt));
+        panel.appendChild(label);
+      });
+    }
+    fillPanel('ct-panel-job', uniqueJobs);
+    fillPanel('ct-panel-stage', uniqueStages);
+    fillPanel('ct-panel-status', uniqueStatuses);
+    fillPanel('ct-panel-source', uniqueSources);
+  }
+
+  function getFilterValues() {
+    function selectedFromPanel(panelId) {
+      var panel = document.getElementById(panelId);
+      if (!panel) return [];
+      var boxes = panel.querySelectorAll('input[type="checkbox"]:checked');
+      var out = [];
+      for (var i = 0; i < boxes.length; i++) out.push(boxes[i].value);
+      return out;
+    }
+    var statusDateSel = document.getElementById('ct-filter-status-date');
+    var statusDateVal = statusDateSel ? statusDateSel.value : '';
+    var fromInput = document.getElementById('ct-status-date-from');
+    var toInput = document.getElementById('ct-status-date-to');
+    return {
+      job: selectedFromPanel('ct-panel-job'),
+      stage: selectedFromPanel('ct-panel-stage'),
+      status: selectedFromPanel('ct-panel-status'),
+      source: selectedFromPanel('ct-panel-source'),
+      statusDate: statusDateVal,
+      statusDateFrom: fromInput ? fromInput.value : '',
+      statusDateTo: toInput ? toInput.value : ''
+    };
+  }
+
+  function getStartOfWeek(d) {
+    var date = new Date(d);
+    date.setHours(0, 0, 0, 0);
+    var day = date.getDay();
+    var diff = day === 0 ? -6 : 1 - day;
+    date.setDate(date.getDate() + diff);
+    return date.getTime();
+  }
+
+  function statusDateMatchesFilter(rowDateMs, filterValue, fromStr, toStr) {
+    if (!filterValue) return true;
+    if (rowDateMs == null || isNaN(rowDateMs)) return false;
+    var today = new Date();
+    today.setHours(0, 0, 0, 0);
+    var todayMs = today.getTime();
+    var weekStart = getStartOfWeek(today);
+    var oneDay = 24 * 60 * 60 * 1000;
+    if (filterValue === 'past-due') return rowDateMs < todayMs;
+    if (filterValue === 'last-week') {
+      var lastWeekStart = weekStart - 7 * oneDay;
+      return rowDateMs >= lastWeekStart && rowDateMs < weekStart;
+    }
+    if (filterValue === 'this-week') return rowDateMs >= weekStart && rowDateMs < weekStart + 7 * oneDay;
+    if (filterValue === 'next-week') {
+      var nextWeekStart = weekStart + 7 * oneDay;
+      return rowDateMs >= nextWeekStart && rowDateMs < nextWeekStart + 7 * oneDay;
+    }
+    if (filterValue === 'range') {
+      if (!fromStr || !toStr) return true;
+      var fromMs = new Date(fromStr).setHours(0, 0, 0, 0);
+      var toMs = new Date(toStr).setHours(23, 59, 59, 999);
+      return rowDateMs >= fromMs && rowDateMs <= toMs;
+    }
+    return false;
+  }
+
+  function updateDropdownLabels() {
+    var f = getFilterValues();
+    function label(count, allLabel, triggerId) {
+      if (count === 0) return allLabel;
+      return count + ' selected';
+    }
+    var tJob = document.getElementById('ct-trigger-job');
+    var tStage = document.getElementById('ct-trigger-stage');
+    var tStatus = document.getElementById('ct-trigger-status');
+    var tSource = document.getElementById('ct-trigger-source');
+    if (tJob) tJob.textContent = label(f.job.length, 'All jobs', 'ct-trigger-job');
+    if (tStage) tStage.textContent = label(f.stage.length, 'All stages', 'ct-trigger-stage');
+    if (tStatus) tStatus.textContent = label(f.status.length, 'All statuses', 'ct-trigger-status');
+    if (tSource) tSource.textContent = label(f.source.length, 'All sources', 'ct-trigger-source');
+  }
+
+  function closeAllDropdowns() {
+    ['job', 'stage', 'status', 'source'].forEach(function (key) {
+      var panel = document.getElementById('ct-panel-' + key);
+      var trigger = document.getElementById('ct-trigger-' + key);
+      if (panel) {
+        panel.hidden = true;
+        panel.style.position = '';
+        panel.style.top = '';
+        panel.style.left = '';
+        panel.style.minWidth = '';
+      }
+      if (trigger) { trigger.setAttribute('aria-expanded', 'false'); }
+    });
+  }
+
+  function positionDropdownPanel(trigger, panel) {
+    var rect = trigger.getBoundingClientRect();
+    panel.style.position = 'fixed';
+    panel.style.top = (rect.bottom + 2) + 'px';
+    panel.style.left = rect.left + 'px';
+    panel.style.minWidth = Math.max(rect.width, 180) + 'px';
+  }
+
+  function setupDropdown(key, raw) {
+    var trigger = document.getElementById('ct-trigger-' + key);
+    var panel = document.getElementById('ct-panel-' + key);
+    if (!trigger || !panel) return;
+    trigger.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var isOpen = !panel.hidden;
+      closeAllDropdowns();
+      if (!isOpen) {
+        panel.hidden = false;
+        trigger.setAttribute('aria-expanded', 'true');
+        positionDropdownPanel(trigger, panel);
+      }
+    });
+    panel.addEventListener('change', function () {
+      updateDropdownLabels();
+      applyFilterAndSort(raw);
+    });
+    panel.addEventListener('click', function (e) {
+      e.stopPropagation();
+    });
+  }
+
+  function applyFilterAndSort(lastRaw) {
+    var f = getFilterValues();
+    var filtered = fullData.filter(function (row) {
+      var job = getDisplayVal(row, 'job', fullColumnNames, fullIndices);
+      var stage = getDisplayVal(row, 'stage', fullColumnNames, fullIndices);
+      var status = getDisplayVal(row, 'status', fullColumnNames, fullIndices);
+      var source = getDisplayVal(row, 'source', fullColumnNames, fullIndices);
+      if (f.job.length > 0 && f.job.indexOf(job) === -1) return false;
+      if (f.stage.length > 0 && f.stage.indexOf(stage) === -1) return false;
+      if (f.status.length > 0 && f.status.indexOf(status) === -1) return false;
+      if (f.source.length > 0 && f.source.indexOf(source) === -1) return false;
+      var statusDateVal = getVal(row, 'statusDate', fullColumnNames, fullIndices);
+      var statusDateMs = statusDateVal ? new Date(statusDateVal).getTime() : null;
+      if (!statusDateMatchesFilter(statusDateMs, f.statusDate, f.statusDateFrom, f.statusDateTo)) return false;
+      return true;
+    });
+    var activeRows = filtered.filter(function (row) { return !isArchivedRow(row, fullColumnNames, fullIndices); });
+    var archivedRows = filtered.filter(function (row) { return isArchivedRow(row, fullColumnNames, fullIndices); });
+    if (sortBy) {
+      var key = sortBy;
+      var mult = sortDir;
+      function sortRows(arr) {
+        arr.sort(function (a, b) {
+          var va = getVal(a, key, fullColumnNames, fullIndices);
+          var vb = getVal(b, key, fullColumnNames, fullIndices);
+          if (key === 'statusDate') {
+            var da = formatDate(va);
+            var db = formatDate(vb);
+            if (!da && !db) return 0;
+            if (!da) return 1;
+            if (!db) return -1;
+            return mult * (new Date(va) - new Date(vb));
+          }
+          var sa = String(va || '').toLowerCase();
+          var sb = String(vb || '').toLowerCase();
+          if (sa < sb) return -mult;
+          if (sa > sb) return mult;
+          return 0;
+        });
+      }
+      sortRows(activeRows);
+      sortRows(archivedRows);
+    }
+    renderTable(fullColumnNames, activeRows, archivedRows, lastRaw && lastRaw._debug, lastRaw, fullJobToIndex);
+    updateDropdownLabels();
+    var metaEl = document.getElementById('ct-meta');
+    if (metaEl) {
+      var metaExtra = filtered.length !== fullData.length ? ' · Showing ' + filtered.length + ' of ' + fullData.length : '';
+      if (activeRows.length !== filtered.length || archivedRows.length > 0) metaExtra += ' · ' + activeRows.length + ' active, ' + archivedRows.length + ' archived';
+      metaEl.textContent = (metaEl.getAttribute('data-sync-text') || '') + metaExtra;
+    }
+    var icons = document.querySelectorAll('.ct-sort-icon');
+    for (var i = 0; i < icons.length; i++) icons[i].textContent = '';
+    var th = sortBy && document.getElementById('ct-th-' + sortBy);
+    if (th) {
+      var icon = th.querySelector('.ct-sort-icon');
+      if (icon) icon.textContent = sortDir === 1 ? ' ↑' : ' ↓';
+    }
   }
 
   function setLoading(show) {
@@ -190,7 +850,10 @@
   }
 
   function hideTable() {
-    document.getElementById('ct-table-wrap').hidden = true;
+    var activeSection = document.getElementById('ct-active-section');
+    var archivedSection = document.getElementById('ct-archived-section');
+    if (activeSection) activeSection.hidden = true;
+    if (archivedSection) archivedSection.hidden = true;
   }
 
   function fetchReport() {
@@ -215,14 +878,102 @@
           setError(msg);
           return;
         }
-        var columnNames = result.data.columnNames || [];
-        var data = result.data.data || [];
+        var raw = result.data;
+        var resolved = raw.results && typeof raw.results === 'object' ? raw.results : raw;
+        var columnNames = resolved.columnNames || resolved.columnNamesList || raw.columnNames || raw.columnNamesList || [];
+        var data = resolved.data || resolved.rows || raw.data || raw.rows || [];
         if (Array.isArray(data[0]) && data[0].length && !columnNames.length && typeof data[0][0] === 'string') {
           columnNames = data[0];
           data = data.slice(1);
         }
-        renderTable(columnNames, data);
-        setMeta('Last synced ' + new Date().toLocaleString());
+        var firstRow = data[0];
+        var isFirstRowHeader = firstRow && columnNames.length === firstRow.length &&
+          columnNames.every(function (h, i) { return String((Array.isArray(firstRow) ? firstRow[i] : firstRow[h]) || '').trim() === String(h || '').trim(); });
+        var rows = isFirstRowHeader ? data.slice(1) : data;
+
+        fullColumnNames = columnNames;
+        fullData = rows;
+        fullIndices = (function () {
+          var i = {};
+          i.name = findColumnIndex(columnNames, possibleNames);
+          i.job = findColumnIndex(columnNames, possibleJobs, [i.name]);
+          i.stage = findColumnIndex(columnNames, possibleStages, [i.name, i.job]);
+          i.status = findColumnIndex(columnNames, possibleStatus, [i.name, i.job, i.stage]);
+          i.statusDate = findColumnIndex(columnNames, possibleStatusDate, [i.name, i.job, i.stage, i.status]);
+          if (i.statusDate < 0) i.statusDate = findFirstDateLikeColumn(columnNames, [i.name, i.job, i.stage, i.status]);
+          i.source = findColumnIndex(columnNames, possibleSource, [i.name, i.job, i.stage, i.status, i.statusDate]);
+          i.applicationId = findColumnIndex(columnNames, possibleApplicationIds, [i.name, i.job, i.stage, i.status, i.statusDate, i.source]);
+          if (i.applicationId < 0) i.applicationId = findApplicationIdColumn(columnNames, [i.name, i.job, i.stage, i.status, i.statusDate, i.source]);
+          i.id = findColumnIndex(columnNames, possibleIds, [i.name, i.job, i.stage, i.status, i.statusDate, i.source, i.applicationId]);
+          if (i.id < 0) i.id = findAshbyCandidateIdColumn(columnNames, [i.name, i.job, i.stage, i.status, i.statusDate, i.source, i.applicationId]);
+          return i;
+        })();
+        fullJobToIndex = {};
+        var jobIdx = 0;
+        for (var r = 0; r < rows.length; r++) {
+          var j = getDisplayVal(rows[r], 'job', columnNames, fullIndices);
+          if (fullJobToIndex[j] === undefined) fullJobToIndex[j] = jobIdx++;
+        }
+        var jobSet = {};
+        var stageSet = {};
+        var statusSet = {};
+        var sourceSet = {};
+        for (var r = 0; r < rows.length; r++) {
+          jobSet[getDisplayVal(rows[r], 'job', columnNames, fullIndices)] = true;
+          stageSet[getDisplayVal(rows[r], 'stage', columnNames, fullIndices)] = true;
+          statusSet[getDisplayVal(rows[r], 'status', columnNames, fullIndices)] = true;
+          sourceSet[getDisplayVal(rows[r], 'source', columnNames, fullIndices)] = true;
+        }
+        uniqueJobs = Object.keys(jobSet).filter(Boolean).sort();
+        uniqueStages = Object.keys(stageSet).filter(Boolean).sort();
+        uniqueStatuses = Object.keys(statusSet).filter(Boolean).sort();
+        uniqueSources = Object.keys(sourceSet).filter(Boolean).sort();
+
+        var syncText = 'Last synced ' + new Date().toLocaleString() + ' · ' + rows.length + ' row(s)';
+        setMeta(syncText);
+        var metaEl = document.getElementById('ct-meta');
+        if (metaEl) metaEl.setAttribute('data-sync-text', syncText + ' ');
+
+        populateFilterOptions();
+        ['job', 'stage', 'status', 'source'].forEach(function (k) { setupDropdown(k, raw); });
+        if (!window._ctFiltersClickSetup) {
+          window._ctFiltersClickSetup = true;
+          document.addEventListener('click', closeAllDropdowns);
+        }
+        var statusDateSel = document.getElementById('ct-filter-status-date');
+        var rangeWrap = document.getElementById('ct-status-date-range-wrap');
+        if (statusDateSel && rangeWrap) {
+          var calendarEl = document.getElementById('ct-date-range-calendar');
+          var fromInput = document.getElementById('ct-status-date-from');
+          var toInput = document.getElementById('ct-status-date-to');
+          function syncDateRangeVisible() {
+            var show = statusDateSel.value === 'range';
+            rangeWrap.classList.toggle('ct-status-date-range-visible', show);
+            rangeWrap.setAttribute('aria-hidden', show ? 'false' : 'true');
+            if (show && calendarEl && fromInput && toInput) {
+              renderDateRangeCalendar(calendarEl, fromInput.value, toInput.value, function (fromStr, toStr) {
+                fromInput.value = fromStr;
+                toInput.value = toStr;
+                applyFilterAndSort(raw);
+              });
+            }
+          }
+          syncDateRangeVisible();
+          statusDateSel.onchange = function () {
+            syncDateRangeVisible();
+            applyFilterAndSort(raw);
+          };
+        }
+        document.querySelectorAll('.ct-sortable').forEach(function (th) {
+          th.addEventListener('click', function () {
+            var key = th.getAttribute('data-sort');
+            if (!key) return;
+            if (sortBy === key) sortDir = -sortDir; else { sortBy = key; sortDir = 1; }
+            applyFilterAndSort(raw);
+          });
+        });
+
+        applyFilterAndSort(raw);
       })
       .catch(function (err) {
         setLoading(false);
