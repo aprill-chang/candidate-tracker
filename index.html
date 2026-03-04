@@ -114,8 +114,8 @@
   var possibleStatus = ['status', 'application status', 'stage', 'state'];
   var possibleStatusDate = ['activity status due at', 'status date', 'status changed', 'interview date', 'next interview date', 'next interview', 'scheduled date', 'scheduled at', 'scheduled for', 'interview scheduled', 'scheduled', 'current interview date', 'upcoming interview', 'last updated', 'updated at', 'updated', 'stage change date', 'stage changed', 'last activity', 'date scheduled', 'date'];
   var possibleSource = ['source', 'credited to', 'referral', 'sourcing source'];
-  var possibleIds = ['ashby candidate id', 'candidate id', 'id', 'candidateId', 'candidate_id'];
-  var possibleApplicationIds = ['ashby job id', 'application id', 'job application id', 'ashby application id', 'applicationId', 'application_id', 'consideration id'];
+  var possibleIds = ['candidate\'s ashby candidate id', 'ashby candidate id', 'candidate id', 'id', 'candidateId', 'candidate_id'];
+  var possibleApplicationIds = ['job\'s ashby job id', 'ashby job id', 'application id', 'job application id', 'ashby application id', 'applicationId', 'application_id', 'consideration id'];
   var ASHBY_PEOPLE_BASE = 'https://app.ashbyhq.com/people/';
   var ASHBY_CANDIDATE_FEED_BASE = 'https://app.ashbyhq.com/home/upcoming/right-side/candidates/';
 
@@ -167,22 +167,15 @@
   }
 
   function buildRowId(row, indices, columnNames, rowIndex) {
-    // Candidate ID + Job ID (application id) to locate the exact person's text box; never use candidate ID alone so same person in multiple jobs get separate notes.
+    // Candidate ID + Job ID = unique per application. Otherwise append rowIndex so every row has a unique key (stops all notes going to one box).
     var candidateId = getCandidateId(row, columnNames, indices);
-    var jobId = getApplicationId(row, columnNames, indices); // Ashby Job ID / Application ID
+    var jobId = getApplicationId(row, columnNames, indices);
     if (candidateId && jobId) return candidateId + '|' + jobId;
-    if (candidateId) {
-      var jobName = indices.job >= 0 ? String(cellValue(row, indices.job, columnNames) || '').trim() : '';
-      if (jobName) return candidateId + '|' + jobName;
-      return candidateId;
-    }
-    if (jobId) return jobId;
     var name = indices.name >= 0 ? String(cellValue(row, indices.name, columnNames) || '').trim() : '';
     var jobName = indices.job >= 0 ? String(cellValue(row, indices.job, columnNames) || '').trim() : '';
     var fallback = (name + '|' + jobName).trim();
-    // Avoid same key for different rows when name/job are empty (e.g. column keys don't match API)
-    if (!fallback || fallback === '|') return 'row-' + rowIndex;
-    return fallback;
+    if (!fallback || fallback === '|') fallback = 'row';
+    return fallback + '|' + rowIndex;
   }
 
   function formatDate(val) {
@@ -242,15 +235,18 @@
       if (val) return val;
     }
     if (row && typeof row === 'object' && !Array.isArray(row)) {
-      var target = 'ashby candidate id';
-      var targetNoSpaces = target.replace(/\s+/g, '');
-      for (var k in row) {
-        if (!Object.prototype.hasOwnProperty.call(row, k)) continue;
-        var keyLower = (k || '').toLowerCase().trim();
-        var keyNoSpaces = keyLower.replace(/\s+/g, '');
-        if (keyLower === target || keyNoSpaces === targetNoSpaces) {
-          var v = row[k];
-          if (v != null && v !== '') return String(v).trim();
+      var targets = ['candidate\'s ashby candidate id', 'ashby candidate id', 'candidate id'];
+      for (var t = 0; t < targets.length; t++) {
+        var target = targets[t];
+        var targetNoSpaces = target.replace(/\s+/g, '');
+        for (var k in row) {
+          if (!Object.prototype.hasOwnProperty.call(row, k)) continue;
+          var keyLower = (k || '').toLowerCase().trim();
+          var keyNoSpaces = keyLower.replace(/\s+/g, '');
+          if (keyLower.indexOf(target) !== -1 || keyNoSpaces.indexOf(targetNoSpaces) !== -1) {
+            var v = row[k];
+            if (v != null && v !== '') return String(v).trim();
+          }
         }
       }
       for (var k2 in row) {
@@ -272,13 +268,15 @@
       if (val) return val;
     }
     if (row && typeof row === 'object' && !Array.isArray(row)) {
-      var targetVariants = ['ashby job id', 'application id', 'job application id', 'ashby application id', 'applicationid'];
-      for (var k in row) {
-        if (!Object.prototype.hasOwnProperty.call(row, k)) continue;
-        var keyLower = (k || '').toLowerCase().trim().replace(/\s+/g, ' ');
-        var keyNoSpaces = keyLower.replace(/\s+/g, '');
-        for (var t = 0; t < targetVariants.length; t++) {
-          if (keyLower.indexOf(targetVariants[t]) !== -1 || keyNoSpaces.indexOf(targetVariants[t].replace(/\s/g, '')) !== -1) {
+      var targetVariants = ['job\'s ashby job id', 'ashby job id', 'application id', 'job application id', 'ashby application id', 'applicationid', 'consideration id'];
+      for (var t = 0; t < targetVariants.length; t++) {
+        var target = targetVariants[t];
+        var targetNoSpaces = target.replace(/\s+/g, '');
+        for (var k in row) {
+          if (!Object.prototype.hasOwnProperty.call(row, k)) continue;
+          var keyLower = (k || '').toLowerCase().trim().replace(/\s+/g, ' ');
+          var keyNoSpaces = keyLower.replace(/\s+/g, '');
+          if (keyLower.indexOf(target) !== -1 || keyNoSpaces.indexOf(targetNoSpaces) !== -1) {
             var v = row[k];
             if (v != null && v !== '') return String(v).trim();
           }
