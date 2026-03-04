@@ -179,7 +179,10 @@
     if (jobId) return jobId;
     var name = indices.name >= 0 ? String(cellValue(row, indices.name, columnNames) || '').trim() : '';
     var jobName = indices.job >= 0 ? String(cellValue(row, indices.job, columnNames) || '').trim() : '';
-    return (name + '|' + jobName) || 'row-' + rowIndex;
+    var fallback = (name + '|' + jobName).trim();
+    // Avoid same key for different rows when name/job are empty (e.g. column keys don't match API)
+    if (!fallback || fallback === '|') return 'row-' + rowIndex;
+    return fallback;
   }
 
   function formatDate(val) {
@@ -220,9 +223,14 @@
     var key = columnNames[colIndex];
     if (key != null && row[key] !== undefined && row[key] !== '') return row[key];
     if (row && typeof row === 'object' && key) {
-      var keyLower = String(key).toLowerCase().trim();
+      var keyNorm = String(key).toLowerCase().trim().replace(/\s+/g, ' ');
       for (var k in row) {
-        if (Object.prototype.hasOwnProperty.call(row, k) && (k || '').toLowerCase().trim() === keyLower) return row[k];
+        if (!Object.prototype.hasOwnProperty.call(row, k)) continue;
+        var rowKeyNorm = (k || '').toLowerCase().trim().replace(/\s+/g, ' ');
+        if (rowKeyNorm === keyNorm) {
+          var v = row[k];
+          if (v != null && v !== '') return v;
+        }
       }
     }
     return '';
