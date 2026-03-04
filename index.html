@@ -524,12 +524,14 @@
       input.rows = 2;
       input.setAttribute('aria-label', 'Note for ' + escapeText(nameVal));
       input.value = noteVal;
-      function saveNote(ev) {
-        setStoredNote(rowId, ev.target.value);
-      }
-      input.addEventListener('change', saveNote);
-      input.addEventListener('input', saveNote);
-      input.addEventListener('blur', saveNote);
+      (function (capturedRowId) {
+        function saveNote(ev) {
+          setStoredNote(capturedRowId, ev.target.value);
+        }
+        input.addEventListener('change', saveNote);
+        input.addEventListener('input', saveNote);
+        input.addEventListener('blur', saveNote);
+      })(rowId);
       tdNote.appendChild(input);
       tr.appendChild(tdNote);
 
