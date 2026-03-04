@@ -167,15 +167,19 @@
   }
 
   function buildRowId(row, indices, columnNames, rowIndex) {
-    // Prefer application ID (unique per row), then candidate ID + job, so keys are stable across refresh/filter/sort.
-    var applicationId = getApplicationId(row, columnNames, indices);
-    if (applicationId) return applicationId;
+    // Candidate ID + Job ID (application id) to locate the exact person's text box; never use candidate ID alone so same person in multiple jobs get separate notes.
     var candidateId = getCandidateId(row, columnNames, indices);
-    var job = indices.job >= 0 ? String(cellValue(row, indices.job, columnNames) || '').trim() : '';
-    if (candidateId && job) return candidateId + '|' + job;
-    if (candidateId) return candidateId;
+    var jobId = getApplicationId(row, columnNames, indices); // Ashby Job ID / Application ID
+    if (candidateId && jobId) return candidateId + '|' + jobId;
+    if (candidateId) {
+      var jobName = indices.job >= 0 ? String(cellValue(row, indices.job, columnNames) || '').trim() : '';
+      if (jobName) return candidateId + '|' + jobName;
+      return candidateId;
+    }
+    if (jobId) return jobId;
     var name = indices.name >= 0 ? String(cellValue(row, indices.name, columnNames) || '').trim() : '';
-    return (name + '|' + job) || 'row-' + rowIndex;
+    var jobName = indices.job >= 0 ? String(cellValue(row, indices.job, columnNames) || '').trim() : '';
+    return (name + '|' + jobName) || 'row-' + rowIndex;
   }
 
   function formatDate(val) {
