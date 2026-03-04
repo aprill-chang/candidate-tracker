@@ -167,16 +167,14 @@
   }
 
   function buildRowId(row, indices, columnNames, rowIndex) {
-    var idCol = -1;
-    var lower = columnNames.map(function (c) { return (c || '').toLowerCase().trim(); });
-    if (lower.indexOf('id') !== -1) idCol = lower.indexOf('id');
-    else if (lower.indexOf('candidate id') !== -1) idCol = lower.indexOf('candidate id');
-    if (idCol >= 0) {
-      var idVal = cellValue(row, idCol, columnNames);
-      if (idVal) return String(idVal).trim();
-    }
-    var name = indices.name >= 0 ? String(cellValue(row, indices.name, columnNames) || '').trim() : '';
+    // Prefer application ID (unique per row), then candidate ID + job, so keys are stable across refresh/filter/sort.
+    var applicationId = getApplicationId(row, columnNames, indices);
+    if (applicationId) return applicationId;
+    var candidateId = getCandidateId(row, columnNames, indices);
     var job = indices.job >= 0 ? String(cellValue(row, indices.job, columnNames) || '').trim() : '';
+    if (candidateId && job) return candidateId + '|' + job;
+    if (candidateId) return candidateId;
+    var name = indices.name >= 0 ? String(cellValue(row, indices.name, columnNames) || '').trim() : '';
     return (name + '|' + job) || 'row-' + rowIndex;
   }
 
@@ -514,12 +512,12 @@
       input.rows = 2;
       input.setAttribute('aria-label', 'Note for ' + escapeText(nameVal));
       input.value = noteVal;
-      input.addEventListener('change', function (ev) {
+      function saveNote(ev) {
         setStoredNote(rowId, ev.target.value);
-      });
-      input.addEventListener('input', function (ev) {
-        setStoredNote(rowId, ev.target.value);
-      });
+      }
+      input.addEventListener('change', saveNote);
+      input.addEventListener('input', saveNote);
+      input.addEventListener('blur', saveNote);
       tdNote.appendChild(input);
       tr.appendChild(tdNote);
 
