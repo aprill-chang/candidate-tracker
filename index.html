@@ -167,7 +167,6 @@
   }
 
   function buildRowId(row, indices, columnNames, rowIndex) {
-    // Candidate ID + Job ID = unique per application. Otherwise append rowIndex so every row has a unique key (stops all notes going to one box).
     var candidateId = getCandidateId(row, columnNames, indices);
     var jobId = getApplicationId(row, columnNames, indices);
     if (candidateId && jobId) return candidateId + '|' + jobId;
@@ -176,6 +175,11 @@
     var fallback = (name + '|' + jobName).trim();
     if (!fallback || fallback === '|') fallback = 'row';
     return fallback + '|' + rowIndex;
+  }
+
+  /** Unique note key per row in current table (always includes row index so no two rows share a key). */
+  function noteKeyForRow(rowId, rowIndex) {
+    return rowId + '::' + rowIndex;
   }
 
   function formatDate(val) {
@@ -462,10 +466,11 @@
     for (var r = 0; r < rows.length; r++) {
       var row = rows[r];
       var rowId = buildRowId(row, indices, columnNames, r);
+      var noteKey = noteKeyForRow(rowId, r);
       var nameVal = cellValue(row, indices.name, columnNames);
       var jobVal = cellValue(row, indices.job, columnNames);
       var stageVal = cellValue(row, indices.stage, columnNames);
-      var noteVal = getStoredNote(rowId);
+      var noteVal = getStoredNote(noteKey);
 
       var tr = document.createElement('tr');
 
@@ -522,15 +527,22 @@
       input.rows = 2;
       input.setAttribute('aria-label', 'Note for ' + escapeText(nameVal));
       input.value = noteVal;
-      input.setAttribute('data-row-id', rowId);
-      function saveNote(ev) {
-        var el = ev.target;
-        var id = el && el.getAttribute('data-row-id');
+      input.setAttribute('data-row-id', noteKey);
+      input.addEventListener('change', function (ev) {
+        var el = ev.currentTarget;
+        var id = el.getAttribute('data-row-id');
         if (id) setStoredNote(id, el.value);
-      }
-      input.addEventListener('change', saveNote);
-      input.addEventListener('input', saveNote);
-      input.addEventListener('blur', saveNote);
+      });
+      input.addEventListener('input', function (ev) {
+        var el = ev.currentTarget;
+        var id = el.getAttribute('data-row-id');
+        if (id) setStoredNote(id, el.value);
+      });
+      input.addEventListener('blur', function (ev) {
+        var el = ev.currentTarget;
+        var id = el.getAttribute('data-row-id');
+        if (id) setStoredNote(id, el.value);
+      });
       tdNote.appendChild(input);
       tr.appendChild(tdNote);
 
